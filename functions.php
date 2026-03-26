@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/config.php';
 
 session_start();
 
@@ -125,7 +126,7 @@ function ensureSampleData() {
         ['What is the Great Commission?', 'R.C. Sproul', 'Faith', 'Explaining the Great Commission.', 'https://via.placeholder.com/400x600?text=What+is+the+Great+Commission', 'https://drive.google.com/open?id=1-PROrcHteH4Qq2QGlSojuT9C8YL7Q1sJ'],
     ];
 
-    $stmt = $pdo->prepare('INSERT INTO books (title, author, category, description, cover, drive_link) VALUES (?,?,?,?,?,?)');
+    $stmt = $pdo->prepare('INSERT INTO books (title, author, category, description, cover, drive_link, doctrine_score, ai_notes) VALUES (?,?,?,?,?,?,NULL,NULL)');
     foreach ($sampleBooks as $b) { $stmt->execute($b); }
 
     $sampleArticles = [
@@ -136,4 +137,53 @@ function ensureSampleData() {
     foreach ($sampleArticles as $a) { $stmt->execute($a); }
 }
 
-ensureSampleData();
+function evaluateBookDoctrinal($bookId) {
+    global $pdo;
+    $stmt = $pdo->prepare('SELECT * FROM books WHERE id = ?');
+    $stmt->execute([$bookId]);
+    $book = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$book) return false;
+
+    // OpenAI API call
+    $apiKey = OPENAI_API_KEY;
+    $url = 'https://api.openai.com/v1/chat/completions';
+    $data = [
+        'model' => 'gpt-3.5-turbo',
+        'messages' => [
+            [
+                'role' => 'system',
+                'content' => 'You are an expert in Christian theology. Evaluate the doctrinal basis of the following book on a scale of 1-10 (10 being perfectly aligned with biblical Christianity) and provide brief notes.'
+            ],
+            [
+                'role' => 'user',
+                'content' => "Book: {$book['title']} by {$book['author']}. Description: {$book['description']}. Category: {$book['category']}."
+            ]
+        ],
+        'max_tokens' => 200
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $apiKey
+    ]);
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    $result = json_decode($response, true);
+    if (isset($result['choices'][0]['message']['content'])) {
+        $content = $result['choices'][0]['message']['content'];
+        // Parse score and notes, e.g., "Score: 9\nNotes: ..."
+        preg_match('/Score:\s*(\d+)/i', $content, $scoreMatch);
+        $score = isset($scoreMatch[1]) ? (int)$scoreMatch[1] : null;
+        $notes = trim(str_replace('Score: ' . $score, '', $content));
+
+        $updateStmt = $pdo->prepare('UPDATE books SET doctrine_score = ?, ai_notes = ? WHERE id = ?');
+        $updateStmt->execute([$score, $notes, $bookId]);
+        return true;
+    }
+    return false;
+}

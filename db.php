@@ -35,7 +35,9 @@ try {
         added_by INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         download_count INT DEFAULT 0,
-        view_count INT DEFAULT 0
+        view_count INT DEFAULT 0,
+        doctrine_score INT DEFAULT NULL,
+        ai_notes TEXT
     );");
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS articles (

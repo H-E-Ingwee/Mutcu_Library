@@ -69,6 +69,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         deleteArticle((int) $_POST['article_id']);
         $_SESSION['flash_success'] = 'Article removed.';
     }
+
+    if ($action === 'evaluate_books' && isAdmin()) {
+        $stmt = $pdo->query('SELECT id FROM books WHERE doctrine_score IS NULL');
+        $bookIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $evaluated = 0;
+        foreach ($bookIds as $id) {
+            if (evaluateBookDoctrinal($id)) {
+                $evaluated++;
+            }
+            // Sleep to avoid rate limit
+            sleep(1);
+        }
+        $_SESSION['flash_success'] = "Evaluated $evaluated books doctrinally.";
+    }
 }
 
 header('Location: ' . $redirect);
