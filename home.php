@@ -24,8 +24,6 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 <body>
     <?php include __DIR__ . '/partials/header.php'; ?>
     <main class="flex-grow-1">
-        <?php if ($flash_success): ?><div class="alert alert-success alert-dismissible fade show" role="alert"><?php echo htmlspecialchars($flash_success); ?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div><?php endif; ?>
-        <?php if ($flash_error): ?><div class="alert alert-danger alert-dismissible fade show" role="alert"><?php echo htmlspecialchars($flash_error); ?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div><?php endif; ?>
         <section class="hero-section">
             <div class="container text-center text-white">
                 <span class="badge bg-warning text-dark mb-4 px-4 py-2 rounded-pill shadow-sm fw-bold border border-white">
@@ -74,7 +72,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                     <?php $featuredBooks = array_slice($books, 0, 4); // First 4 books as featured ?>
                     <?php foreach ($featuredBooks as $book): ?>
                         <div class="col-md-3">
-                            <div class="card book-card">
+                            <div class="card book-card" onclick="openQuickView(this)" data-book-id="<?=$book['id']?>" data-title="<?=htmlspecialchars($book['title'])?>" data-author="<?=htmlspecialchars($book['author'])?>" data-description="<?=htmlspecialchars($book['description'])?>" data-cover="<?=htmlspecialchars($book['cover'])?>" data-category="<?=htmlspecialchars($book['category'])?>" data-drive-link="<?=htmlspecialchars($book['drive_link'])?>" style="cursor: pointer;">
                                 <div class="book-cover-container">
                                     <span class="category-badge"><?=htmlspecialchars($book['category'])?></span>
                                     <img src="<?=htmlspecialchars($book['cover'])?>" class="book-cover" alt="<?=htmlspecialchars($book['title'])?>">
@@ -84,14 +82,9 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                                     <p class="text-muted small mb-3 border-bottom pb-2">By <?=htmlspecialchars($book['author'])?></p>
                                     <p class="card-text small flex-grow-1 text-secondary mb-4"><?=htmlspecialchars($book['description'])?></p>
                                     <div class="d-flex gap-2 mb-3">
-                                        <form method="post" action="actions.php" class="flex-fill">
-                                            <input type="hidden" name="action" value="toggle_bookmark">
-                                            <input type="hidden" name="book_id" value="<?=$book['id']?>">
-                                            <input type="hidden" name="return_url" value="home.php">
-                                            <button type="submit" class="btn btn-outline-secondary w-100 rounded-pill fw-bold">
-                                                <i class="bi bi-bookmark me-1"></i> Bookmark
-                                            </button>
-                                        </form>
+                                        <button onclick="toggleBookmark(<?=$book['id']?>, this)" class="btn btn-outline-secondary w-100 rounded-pill fw-bold">
+                                            <i class="bi bi-bookmark me-1"></i> Bookmark
+                                        </button>
                                     </div>
                                     <a href="download.php?id=<?=$book['id']?>" target="_blank" class="btn btn-outline-primary w-100 mt-auto rounded-pill fw-bold" style="border-color: var(--primary-color); color: var(--primary-color);">
                                         <i class="bi bi-cloud-arrow-down me-1"></i> Access Book

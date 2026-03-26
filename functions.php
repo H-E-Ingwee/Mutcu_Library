@@ -64,6 +64,13 @@ function toggleBookmark($userId, $bookId) {
     }
 }
 
+function isBookmarked($userId, $bookId) {
+    global $pdo;
+    $stmt = $pdo->prepare('SELECT id FROM bookmarks WHERE user_id = ? AND book_id = ?');
+    $stmt->execute([$userId, $bookId]);
+    return $stmt->fetch() !== false;
+}
+
 function getUserBookmarks($userId) {
     global $pdo;
     $stmt = $pdo->prepare('

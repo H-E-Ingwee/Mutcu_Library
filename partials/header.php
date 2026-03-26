@@ -20,6 +20,11 @@ if (!isset($currentUser)) {
                 <?php if ($currentUser): ?>
                     <li class="nav-item"><a class="nav-link text-white" href="profile.php"><i class="bi bi-person-circle me-1"></i> My Library</a></li>
                     <li class="nav-item">
+                        <button id="themeToggle" class="btn btn-link text-white nav-link">
+                            <i class="bi bi-moon-stars"></i>
+                        </button>
+                    </li>
+                    <li class="nav-item">
                         <form method="post" action="actions.php" class="m-0">
                             <input type="hidden" name="action" value="logout">
                             <input type="hidden" name="return_url" value="<?=basename($_SERVER['PHP_SELF'])?>">

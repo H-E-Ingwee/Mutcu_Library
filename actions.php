@@ -94,12 +94,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'toggle_bookmark') {
         $user = currentUser();
         if (!$user) {
-            header('Location: login.php');
+            if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+                header('Content-Type: application/json');
+                echo json_encode(['status' => 'error', 'message' => 'Not logged in']);
+                exit;
+            } else {
+                header('Location: login.php');
+                exit;
+            }
+        }
+        $bookId = (int) $_POST['book_id'];
+        toggleBookmark($user['id'], $bookId);
+        $isBookmarked = isBookmarked($user['id'], $bookId);
+        if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'success', 'bookmarked' => $isBookmarked]);
+            exit;
+        } else {
+            header('Location: ' . ($_POST['return_url'] ?? 'home.php'));
             exit;
         }
-        toggleBookmark($user['id'], (int) $_POST['book_id']);
-        header('Location: ' . ($_POST['return_url'] ?? 'home.php'));
-        exit;
     }
 
     if ($action === 'update_goal') {

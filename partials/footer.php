@@ -37,3 +37,64 @@
         </div>
     </div>
 </footer>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="flashToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="toastMessage"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<!-- Quick View Modal -->
+<div class="modal fade" id="quickViewModal" tabindex="-1" aria-labelledby="quickViewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quickViewModalLabel">Book Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <img id="quickViewCover" src="" class="img-fluid rounded" alt="Book Cover">
+                    </div>
+                    <div class="col-md-8">
+                        <span id="quickViewCategory" class="badge bg-primary mb-2"></span>
+                        <h4 id="quickViewTitle" class="fw-bold"></h4>
+                        <p class="text-muted mb-3">By <span id="quickViewAuthor"></span></p>
+                        <p id="quickViewDescription" class="mb-4"></p>
+                        <div class="d-flex gap-2">
+                            <button onclick="toggleBookmark(document.getElementById('quickViewBookId').value, this)" id="quickViewBookmarkBtn" class="btn btn-outline-secondary rounded-pill fw-bold">
+                                <i class="bi bi-bookmark me-1"></i> Bookmark
+                            </button>
+                            <a id="quickViewDownloadBtn" href="" target="_blank" class="btn btn-primary rounded-pill fw-bold">
+                                <i class="bi bi-cloud-arrow-down me-1"></i> Access Book
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+    // Show flash messages as toasts
+    document.addEventListener('DOMContentLoaded', function() {
+        const flashSuccess = '<?php echo addslashes($_SESSION['flash_success'] ?? ''); ?>';
+        const flashError = '<?php echo addslashes($_SESSION['flash_error'] ?? ''); ?>';
+        if (flashSuccess) {
+            showToast(flashSuccess, 'success');
+            <?php if (isset($_SESSION['flash_success'])) unset($_SESSION['flash_success']); ?>
+        }
+        if (flashError) {
+            showToast(flashError, 'danger');
+            <?php if (isset($_SESSION['flash_error'])) unset($_SESSION['flash_error']); ?>
+        }
+    });
+</script>
