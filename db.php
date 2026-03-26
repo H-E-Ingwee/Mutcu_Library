@@ -6,13 +6,13 @@ $username = 'root';
 $password = '';
 
 try {
+    // Create database if not exists
+    $tempPdo = new PDO("mysql:host=$host;charset=utf8", $username, $password);
+    $tempPdo->exec("CREATE DATABASE IF NOT EXISTS `$dbname`");
+    $tempPdo = null;
+
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-    // Create database if not exists (optional, but for simplicity, assume it exists or create)
-    // For now, assume DB exists, or add creation.
-    // To create DB: $pdo->exec("CREATE DATABASE IF NOT EXISTS $dbname");
-    // But since connecting to it, better to create outside or handle.
 
     // Create tables
     $pdo->exec("CREATE TABLE IF NOT EXISTS users (

@@ -4,6 +4,9 @@ $currentUser = currentUser();
 $books = getBooks();
 $articles = getArticles();
 $stats = getStats();
+$flash_success = $_SESSION['flash_success'] ?? null;
+$flash_error = $_SESSION['flash_error'] ?? null;
+unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -21,6 +24,8 @@ $stats = getStats();
 <body>
     <?php include __DIR__ . '/partials/header.php'; ?>
     <main class="flex-grow-1">
+        <?php if ($flash_success): ?><div class="alert alert-success alert-dismissible fade show" role="alert"><?php echo htmlspecialchars($flash_success); ?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div><?php endif; ?>
+        <?php if ($flash_error): ?><div class="alert alert-danger alert-dismissible fade show" role="alert"><?php echo htmlspecialchars($flash_error); ?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div><?php endif; ?>
         <section class="hero-section">
             <div class="container text-center text-white">
                 <span class="badge bg-warning text-dark mb-4 px-4 py-2 rounded-pill shadow-sm fw-bold border border-white">
