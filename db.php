@@ -21,6 +21,7 @@ try {
         email VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
         role VARCHAR(50) NOT NULL DEFAULT 'member',
+        reading_goal INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );");
 
@@ -35,9 +36,7 @@ try {
         added_by INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         download_count INT DEFAULT 0,
-        view_count INT DEFAULT 0,
-        doctrine_score INT DEFAULT NULL,
-        ai_notes TEXT
+        view_count INT DEFAULT 0
     );");
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS articles (
@@ -60,6 +59,15 @@ try {
         target_type VARCHAR(50),
         target_id INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS bookmarks (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        book_id INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
     );");
 
     // Seed admin if not exists

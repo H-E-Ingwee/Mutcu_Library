@@ -49,6 +49,52 @@ function deleteArticle($id) {
     $stmt->execute([$id]);
 }
 
+function toggleBookmark($userId, $bookId) {
+    global $pdo;
+    $stmt = $pdo->prepare('SELECT id FROM bookmarks WHERE user_id = ? AND book_id = ?');
+    $stmt->execute([$userId, $bookId]);
+    if ($stmt->fetch()) {
+        // Exists, delete
+        $stmt = $pdo->prepare('DELETE FROM bookmarks WHERE user_id = ? AND book_id = ?');
+        $stmt->execute([$userId, $bookId]);
+    } else {
+        // Insert
+        $stmt = $pdo->prepare('INSERT INTO bookmarks (user_id, book_id) VALUES (?, ?)');
+        $stmt->execute([$userId, $bookId]);
+    }
+}
+
+function getUserBookmarks($userId) {
+    global $pdo;
+    $stmt = $pdo->prepare('
+        SELECT b.* FROM bookmarks bm
+        JOIN books b ON bm.book_id = b.id
+        WHERE bm.user_id = ?
+        ORDER BY bm.created_at DESC
+    ');
+    $stmt->execute([$userId]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getUserReadingHistory($userId) {
+    global $pdo;
+    $stmt = $pdo->prepare('
+        SELECT DISTINCT b.* FROM events e
+        JOIN books b ON e.target_id = b.id
+        WHERE e.user_id = ? AND e.event_type IN (\'view\', \'download\') AND e.target_type = \'book\'
+        ORDER BY e.created_at DESC
+        LIMIT 5
+    ');
+    $stmt->execute([$userId]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function updateReadingGoal($userId, $goal) {
+    global $pdo;
+    $stmt = $pdo->prepare('UPDATE users SET reading_goal = ? WHERE id = ?');
+    $stmt->execute([$goal, $userId]);
+}
+
 function trackEvent($userId, $eventType, $targetType, $targetId) {
     global $pdo;
     $stmt = $pdo->prepare('INSERT INTO events (user_id, event_type, target_type, target_id) VALUES (?, ?, ?, ?)');
@@ -126,7 +172,7 @@ function ensureSampleData() {
         ['What is the Great Commission?', 'R.C. Sproul', 'Faith', 'Explaining the Great Commission.', 'https://via.placeholder.com/400x600?text=What+is+the+Great+Commission', 'https://drive.google.com/open?id=1-PROrcHteH4Qq2QGlSojuT9C8YL7Q1sJ'],
     ];
 
-    $stmt = $pdo->prepare('INSERT INTO books (title, author, category, description, cover, drive_link, doctrine_score, ai_notes) VALUES (?,?,?,?,?,?,NULL,NULL)');
+    $stmt = $pdo->prepare('INSERT INTO books (title, author, category, description, cover, drive_link) VALUES (?,?,?,?,?,?)');
     foreach ($sampleBooks as $b) { $stmt->execute($b); }
 
     $sampleArticles = [
@@ -137,53 +183,4 @@ function ensureSampleData() {
     foreach ($sampleArticles as $a) { $stmt->execute($a); }
 }
 
-function evaluateBookDoctrinal($bookId) {
-    global $pdo;
-    $stmt = $pdo->prepare('SELECT * FROM books WHERE id = ?');
-    $stmt->execute([$bookId]);
-    $book = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$book) return false;
 
-    // OpenAI API call
-    $apiKey = OPENAI_API_KEY;
-    $url = 'https://api.openai.com/v1/chat/completions';
-    $data = [
-        'model' => 'gpt-3.5-turbo',
-        'messages' => [
-            [
-                'role' => 'system',
-                'content' => 'You are an expert in Christian theology. Evaluate the doctrinal basis of the following book on a scale of 1-10 (10 being perfectly aligned with biblical Christianity) and provide brief notes.'
-            ],
-            [
-                'role' => 'user',
-                'content' => "Book: {$book['title']} by {$book['author']}. Description: {$book['description']}. Category: {$book['category']}."
-            ]
-        ],
-        'max_tokens' => 200
-    ];
-
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json',
-        'Authorization: Bearer ' . $apiKey
-    ]);
-    $response = curl_exec($ch);
-    curl_close($ch);
-
-    $result = json_decode($response, true);
-    if (isset($result['choices'][0]['message']['content'])) {
-        $content = $result['choices'][0]['message']['content'];
-        // Parse score and notes, e.g., "Score: 9\nNotes: ..."
-        preg_match('/Score:\s*(\d+)/i', $content, $scoreMatch);
-        $score = isset($scoreMatch[1]) ? (int)$scoreMatch[1] : null;
-        $notes = trim(str_replace('Score: ' . $score, '', $content));
-
-        $updateStmt = $pdo->prepare('UPDATE books SET doctrine_score = ?, ai_notes = ? WHERE id = ?');
-        $updateStmt->execute([$score, $notes, $bookId]);
-        return true;
-    }
-    return false;
-}

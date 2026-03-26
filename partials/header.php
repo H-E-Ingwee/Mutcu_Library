@@ -18,7 +18,7 @@ if (!isset($currentUser)) {
                 <li class="nav-item"><a class="nav-link" href="articles.php">Articles</a></li>
                 <li class="nav-item"><a class="nav-link" href="admin.php">Admin</a></li>
                 <?php if ($currentUser): ?>
-                    <li class="nav-item"><span class="nav-link text-white">Hi, <?=htmlspecialchars($currentUser['name'])?></span></li>
+                    <li class="nav-item"><a class="nav-link text-white" href="profile.php"><i class="bi bi-person-circle me-1"></i> My Library</a></li>
                     <li class="nav-item">
                         <form method="post" action="actions.php" class="m-0">
                             <input type="hidden" name="action" value="logout">

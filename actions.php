@@ -91,18 +91,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['flash_success'] = 'Article removed.';
     }
 
-    if ($action === 'evaluate_books' && isAdmin()) {
-        $stmt = $pdo->query('SELECT id FROM books WHERE doctrine_score IS NULL');
-        $bookIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        $evaluated = 0;
-        foreach ($bookIds as $id) {
-            if (evaluateBookDoctrinal($id)) {
-                $evaluated++;
-            }
-            // Sleep to avoid rate limit
-            sleep(1);
+    if ($action === 'toggle_bookmark') {
+        $user = currentUser();
+        if (!$user) {
+            header('Location: login.php');
+            exit;
         }
-        $_SESSION['flash_success'] = "Evaluated $evaluated books doctrinally.";
+        toggleBookmark($user['id'], (int) $_POST['book_id']);
+        header('Location: ' . ($_POST['return_url'] ?? 'home.php'));
+        exit;
+    }
+
+    if ($action === 'update_goal') {
+        $user = currentUser();
+        if (!$user) {
+            header('Location: login.php');
+            exit;
+        }
+        updateReadingGoal($user['id'], (int) $_POST['goal']);
+        $_SESSION['flash_success'] = 'Reading goal updated successfully.';
     }
 }
 

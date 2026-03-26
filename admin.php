@@ -98,14 +98,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                 <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
                     <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <h5 class="mb-0 fw-bold text-primary-brand">Book Catalog</h5>
-                        <div>
-                            <form method="post" action="actions.php" class="d-inline me-2">
-                                <input type="hidden" name="action" value="evaluate_books">
-                                <input type="hidden" name="return_url" value="admin.php">
-                                <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm" title="Evaluate Doctrinal Basis"><i class="bi bi-robot me-1"></i> Evaluate All</button>
-                            </form>
-                            <button class="btn btn-sm btn-accent rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addBookModal"><i class="bi bi-plus-circle-fill me-1"></i> Add Book</button>
-                        </div>
+                        <button class="btn btn-sm btn-accent rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addBookModal"><i class="bi bi-plus-circle-fill me-1"></i> Add Book</button>
                     </div>
                     <div class="card-body p-0 table-responsive">
                         <table class="table table-hover table-custom align-middle mb-0">
