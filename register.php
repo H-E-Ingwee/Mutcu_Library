@@ -1,0 +1,13 @@
+<?php
+require_once __DIR__ . '/functions.php';
+$currentUser = currentUser();
+if ($currentUser) {
+    header('Location: home.php'); exit;
+}
+?>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>MUTCU E-Library | Register</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet"><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"><link rel="stylesheet" href="assets/css/style.css"></head><body>
+<?php include __DIR__.'/partials/header.php'; ?>
+<main class="flex-grow-1 py-5"><div class="container"><div class="row justify-content-center"><div class="col-md-6 col-lg-5"><div class="card border-0 shadow-lg mt-4 mt-lg-5 rounded-4 overflow-hidden"><div class="card-body p-5"><div class="text-center mb-4"><div class="d-inline-flex align-items-center justify-content-center bg-primary-brand text-white rounded-circle mb-3" style="width:80px;height:80px;"><i class="bi bi-person-plus fs-1"></i></div><h3 class="heading-font text-primary-brand fw-bold">Create Account</h3><p class="text-muted">Join as a member to download books and track usage.</p></div><form method="post" action="actions.php" class="needs-validation" novalidate><input type="hidden" name="action" value="register"><input type="hidden" name="return_url" value="login.php"><div class="form-floating mb-3"><input type="text" class="form-control" name="name" id="name" placeholder="Full Name" required><label for="name">Full Name</label></div><div class="form-floating mb-3"><input type="email" class="form-control" name="email" id="email" placeholder="name@example.com" required><label for="email">Email address</label></div><div class="form-floating mb-4"><input type="password" class="form-control" name="password" id="password" placeholder="Password" required><label for="password">Password</label></div><button type="submit" class="btn btn-accent btn-lg w-100 rounded-pill shadow-sm mb-3">Register</button><div class="text-center text-muted">Already have an account? <a href="login.php" class="text-decoration-none fw-bold" style="color: var(--primary-color);">Login</a></div></form></div></div></div></div></main>
+<?php include __DIR__.'/partials/footer.php'; ?>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body></html>
