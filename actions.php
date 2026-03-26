@@ -55,9 +55,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['flash_success'] = 'Book added successfully.';
     }
 
-    if ($action === 'add_article' && isAdmin()) {
-        createArticle(trim($_POST['title']), trim($_POST['author']), trim($_POST['abstract']), trim($_POST['link']), trim($_POST['date']), trim($_POST['read_time']));
-        $_SESSION['flash_success'] = 'Article added successfully.';
+    if ($action === 'edit_book' && isAdmin()) {
+        $id = (int) $_POST['book_id'];
+        $title = trim($_POST['title']);
+        $author = trim($_POST['author']);
+        $category = trim($_POST['category']);
+        $description = trim($_POST['description']);
+        $cover = trim($_POST['cover']);
+        $drive_link = trim($_POST['drive_link']);
+        $stmt = $pdo->prepare('UPDATE books SET title = ?, author = ?, category = ?, description = ?, cover = ?, drive_link = ? WHERE id = ?');
+        $stmt->execute([$title, $author, $category, $description, $cover, $drive_link, $id]);
+        $_SESSION['flash_success'] = 'Book updated successfully.';
+    }
+
+    if ($action === 'edit_article' && isAdmin()) {
+        $id = (int) $_POST['article_id'];
+        $title = trim($_POST['title']);
+        $author = trim($_POST['author']);
+        $abstract = trim($_POST['abstract']);
+        $link = trim($_POST['link']);
+        $date = trim($_POST['date']);
+        $read_time = trim($_POST['read_time']);
+        $stmt = $pdo->prepare('UPDATE articles SET title = ?, author = ?, abstract = ?, link = ?, date = ?, read_time = ? WHERE id = ?');
+        $stmt->execute([$title, $author, $abstract, $link, $date, $read_time, $id]);
+        $_SESSION['flash_success'] = 'Article updated successfully.';
     }
 
     if ($action === 'delete_book' && isAdmin()) {

@@ -107,6 +107,47 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
             </div>
         </div>
 
+        <div class="bg-light py-5">
+            <div class="container">
+                <div class="d-flex justify-content-between align-items-end mb-4">
+                    <div>
+                        <h3 class="text-primary-brand fw-bold mb-2">Featured Books</h3>
+                        <div style="height: 3px; width: 40px; background-color: var(--accent-color); border-radius: 2px;"></div>
+                    </div>
+                    <a class="btn btn-outline-primary rounded-pill" href="library.php">View All Books</a>
+                </div>
+
+                <div class="row g-4" id="home-books-grid">
+                    <?php $featuredBooks = array_slice($books, 0, 4); // First 4 books as featured ?>
+                    <?php foreach ($featuredBooks as $book): ?>
+                        <div class="col-md-3">
+                            <div class="card book-card">
+                                <div class="book-cover-container">
+                                    <span class="category-badge"><?=htmlspecialchars($book['category'])?></span>
+                                    <img src="<?=htmlspecialchars($book['cover'])?>" class="book-cover" alt="<?=htmlspecialchars($book['title'])?>">
+                                </div>
+                                <div class="card-body d-flex flex-column p-4">
+                                    <h5 class="card-title fw-bold mb-1" style="font-family:var(--heading-font);color:var(--primary-color);"><?=htmlspecialchars($book['title'])?></h5>
+                                    <p class="text-muted small mb-3 border-bottom pb-2">By <?=htmlspecialchars($book['author'])?></p>
+                                    <p class="card-text small flex-grow-1 text-secondary mb-4"><?=htmlspecialchars($book['description'])?></p>
+                                    <?php if ($book['doctrine_score']): ?>
+                                        <div class="mb-3">
+                                            <span class="badge bg-success fs-6 px-3 py-2 rounded-pill">
+                                                <i class="bi bi-robot me-1"></i> Doctrinal Score: <?=$book['doctrine_score']?>/10
+                                            </span>
+                                        </div>
+                                    <?php endif; ?>
+                                    <a href="download.php?id=<?=$book['id']?>" target="_blank" class="btn btn-outline-primary w-100 mt-auto rounded-pill fw-bold" style="border-color: var(--primary-color); color: var(--primary-color);">
+                                        <i class="bi bi-cloud-arrow-down me-1"></i> Access Book
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+
         <div class="bg-white py-5">
             <div class="container">
                 <div class="d-flex justify-content-between align-items-end mb-4">

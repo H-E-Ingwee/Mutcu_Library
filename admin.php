@@ -10,6 +10,8 @@ $articles = getArticles();
 $stats = getStats();
 $eventsStmt = $pdo->query('SELECT event_type, target_type, COUNT(*) as count FROM events GROUP BY event_type, target_type');
 $events = $eventsStmt->fetchAll(PDO::FETCH_ASSOC);
+$recentEventsStmt = $pdo->query('SELECT e.event_type, e.target_type, e.created_at, u.name as user_name FROM events e LEFT JOIN users u ON e.user_id = u.id ORDER BY e.created_at DESC LIMIT 10');
+$recentEvents = $recentEventsStmt->fetchAll(PDO::FETCH_ASSOC);
 $flash_success = $_SESSION['flash_success'] ?? null;
 $flash_error = $_SESSION['flash_error'] ?? null;
 unset($_SESSION['flash_success'], $_SESSION['flash_error']);
@@ -65,6 +67,31 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                         <?php foreach ($events as $event): ?><li class="list-group-item d-flex justify-content-between align-items-center"><?=htmlspecialchars(ucfirst($event['event_type']) . ' '. ucfirst($event['target_type']))?><span class="badge bg-primary rounded-pill"><?= $event['count'] ?></span></li><?php endforeach; ?>
                     </ul></div></div></div>
                 </div>
+
+                <div class="mt-4">
+                    <h5 class="fw-bold text-primary-brand mb-3">Recent Activities</h5>
+                    <div class="card shadow-sm border-0 rounded-4">
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush">
+                                <?php if ($recentEvents): ?>
+                                    <?php foreach ($recentEvents as $event): ?>
+                                        <li class="list-group-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong><?= htmlspecialchars(ucfirst($event['event_type'])) ?></strong> on <em><?= htmlspecialchars(ucfirst($event['target_type'])) ?></em>
+                                                    <?php if ($event['user_name']): ?> by <?= htmlspecialchars($event['user_name']) ?><?php endif; ?>
+                                                </div>
+                                                <small class="text-muted"><?= htmlspecialchars(date('M d, H:i', strtotime($event['created_at']))) ?></small>
+                                            </div>
+                                        </li>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <li class="list-group-item text-center text-muted">No recent activities.</li>
+                                <?php endif; ?>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="tab-pane fade" id="manage-books" role="tabpanel">
@@ -91,7 +118,10 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                                     <td><strong><?=htmlspecialchars($book['title'])?></strong><br><small class="text-muted"><?=htmlspecialchars($book['author'])?></small></td>
                                     <td><span class="badge bg-light text-dark border"><?=htmlspecialchars($book['category'])?></span></td>
                                     <td><a href="download.php?id=<?=$book['id']?>" target="_blank" class="btn btn-sm btn-light border rounded-pill px-3 text-primary">Drive</a></td>
-                                    <td class="text-end"><form method="post" action="actions.php" class="d-inline"><input type="hidden" name="action" value="delete_book"><input type="hidden" name="book_id" value="<?=$book['id']?>"><input type="hidden" name="return_url" value="admin.php"><button type="submit" class="btn btn-sm btn-outline-danger rounded-circle" title="Delete"><i class="bi bi-trash"></i></button></form></td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-outline-primary rounded-circle me-2" title="Edit" data-bs-toggle="modal" data-bs-target="#editBookModal" onclick="populateEditBookModal(<?=$book['id']?>, '<?=htmlspecialchars($book['title'])?>', '<?=htmlspecialchars($book['author'])?>', '<?=htmlspecialchars($book['category'])?>', '<?=htmlspecialchars($book['drive_link'])?>', '<?=htmlspecialchars($book['description'])?>', '<?=htmlspecialchars($book['cover'])?>')"><i class="bi bi-pencil"></i></button>
+                                        <form method="post" action="actions.php" class="d-inline"><input type="hidden" name="action" value="delete_book"><input type="hidden" name="book_id" value="<?=$book['id']?>"><input type="hidden" name="return_url" value="admin.php"><button type="submit" class="btn btn-sm btn-outline-danger rounded-circle" title="Delete"><i class="bi bi-trash"></i></button></form>
+                                    </td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -116,7 +146,10 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                                     <td><strong><?=htmlspecialchars($art['title'])?></strong><br><small class="text-muted">By <?=htmlspecialchars($art['author'])?></small></td>
                                     <td><?=htmlspecialchars($art['date'])?></td>
                                     <td><a href="article.php?id=<?=$art['id']?>" target="_blank" class="text-primary">External Link</a></td>
-                                    <td class="text-end"><form method="post" action="actions.php" class="d-inline"><input type="hidden" name="action" value="delete_article"><input type="hidden" name="article_id" value="<?=$art['id']?>"><input type="hidden" name="return_url" value="admin.php"><button type="submit" class="btn btn-sm btn-outline-danger rounded-circle" title="Delete"><i class="bi bi-trash"></i></button></form></td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-outline-primary rounded-circle me-2" title="Edit" data-bs-toggle="modal" data-bs-target="#editArticleModal" onclick="populateEditArticleModal(<?=$art['id']?>, '<?=htmlspecialchars($art['title'])?>', '<?=htmlspecialchars($art['author'])?>', '<?=htmlspecialchars($art['abstract'])?>', '<?=htmlspecialchars($art['link'])?>', '<?=htmlspecialchars($art['date'])?>', '<?=htmlspecialchars($art['read_time'])?>')"><i class="bi bi-pencil"></i></button>
+                                        <form method="post" action="actions.php" class="d-inline"><input type="hidden" name="action" value="delete_article"><input type="hidden" name="article_id" value="<?=$art['id']?>"><input type="hidden" name="return_url" value="admin.php"><button type="submit" class="btn btn-sm btn-outline-danger rounded-circle" title="Delete"><i class="bi bi-trash"></i></button></form>
+                                    </td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -147,6 +180,24 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
     <div class="form-floating mb-3"><input type="text" class="form-control" name="read_time" value="5 min read" required><label>Read Time</label></div>
 </div><div class="modal-footer border-0 pt-0 pb-4 px-4"><button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-accent rounded-pill px-4">Save Article</button></div></form></div></div></div>
 
+<div class="modal fade" id="editBookModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow-lg rounded-4"><div class="modal-header bg-primary-brand text-white border-0 rounded-top-4 py-3"><h5 class="modal-title heading-font"><i class="bi bi-pencil-square me-2"></i>Edit Book</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><form method="post" action="actions.php"><div class="modal-body p-4"><input type="hidden" name="action" value="edit_book"><input type="hidden" name="book_id" id="editBookId"><input type="hidden" name="return_url" value="admin.php">
+    <div class="form-floating mb-3"><input type="text" class="form-control" name="title" id="editBookTitle" required><label>Book Title</label></div>
+    <div class="form-floating mb-3"><input type="text" class="form-control" name="author" id="editBookAuthor" required><label>Author</label></div>
+    <div class="form-floating mb-3"><select class="form-select" name="category" id="editBookCategory" required><option value="" disabled>Select a category...</option><option>Faith</option><option>Leadership</option><option>Purpose</option><option>Relationships</option></select><label>Category</label></div>
+    <div class="form-floating mb-3"><input type="url" class="form-control" name="drive_link" id="editBookDriveLink" placeholder="https://drive.google.com/..." required><label>Google Drive Link</label></div>
+    <div class="form-floating mb-3"><input type="url" class="form-control" name="cover" id="editBookCover" placeholder="https://..." required><label>Cover Image URL</label></div>
+    <div class="form-floating mb-3"><textarea class="form-control" name="description" id="editBookDescription" style="height:100px;" required></textarea><label>Description</label></div>
+</div><div class="modal-footer border-0 pt-0 pb-4 px-4"><button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-accent rounded-pill px-4">Update Book</button></div></form></div></div></div>
+
+<div class="modal fade" id="editArticleModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow-lg rounded-4"><div class="modal-header bg-primary-brand text-white border-0 rounded-top-4 py-3"><h5 class="modal-title heading-font"><i class="bi bi-pencil-square me-2"></i>Edit Article</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><form method="post" action="actions.php"><div class="modal-body p-4"><input type="hidden" name="action" value="edit_article"><input type="hidden" name="article_id" id="editArticleId"><input type="hidden" name="return_url" value="admin.php">
+    <div class="form-floating mb-3"><input type="text" class="form-control" name="title" id="editArticleTitle" required><label>Article Title</label></div>
+    <div class="form-floating mb-3"><input type="text" class="form-control" name="author" id="editArticleAuthor" required><label>Author</label></div>
+    <div class="form-floating mb-3"><input type="url" class="form-control" name="link" id="editArticleLink" required><label>External URL Link</label></div>
+    <div class="form-floating mb-3"><textarea class="form-control" name="abstract" id="editArticleAbstract" style="height:100px;" required></textarea><label>Abstract</label></div>
+    <div class="form-floating mb-3"><input type="text" class="form-control" name="date" id="editArticleDate" required><label>Date Added</label></div>
+    <div class="form-floating mb-3"><input type="text" class="form-control" name="read_time" id="editArticleReadTime" required><label>Read Time</label></div>
+</div><div class="modal-footer border-0 pt-0 pb-4 px-4"><button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-accent rounded-pill px-4">Update Article</button></div></form></div></div></div>
+
 <?php include __DIR__.'/partials/footer.php'; ?>
 <script> const MUTCU = { user: <?=json_encode($currentUser)?>, books: <?=json_encode($books)?>, articles: <?=json_encode($articles)?>, stats: <?=json_encode($stats)?> };</script>
 <script src="assets/js/app.js"></script>
@@ -157,5 +208,26 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
         new Chart(document.getElementById('interactionsChart'),{type:'line',data:{labels:days,datasets:[{label:'Visits',data:[120,190,150,220,180,290,350],borderColor:'#04003d',backgroundColor:'rgba(4,0,61,0.12)',fill:true,tension:0.4},{label:'Downloads',data:[40,60,45,80,55,110,140],borderColor:'#ff9700',backgroundColor:'transparent',borderDash:[5,5],tension:0.4}]},options:{responsive:true,maintainAspectRatio:false}});
         new Chart(document.getElementById('categoryChart'),{type:'doughnut',data:{labels:['Faith','Leadership','Purpose','Relationships'],datasets:[{data:[45,25,15,15],backgroundColor:['#dc3545','#ff9700','#17a2b8','#20c997'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
     })();
+
+    function populateEditBookModal(id, title, author, category, driveLink, description, cover) {
+        document.getElementById('editBookId').value = id;
+        document.getElementById('editBookTitle').value = title;
+        document.getElementById('editBookAuthor').value = author;
+        document.getElementById('editBookCategory').value = category;
+        document.getElementById('editBookDriveLink').value = driveLink;
+        document.getElementById('editBookDescription').value = description;
+        document.getElementById('editBookCover').value = cover;
+    }
+
+    function populateEditArticleModal(id, title, author, abstract, link, date, readTime) {
+        document.getElementById('editArticleId').value = id;
+        document.getElementById('editArticleTitle').value = title;
+        document.getElementById('editArticleAuthor').value = author;
+        document.getElementById('editArticleAbstract').value = abstract;
+        document.getElementById('editArticleLink').value = link;
+        document.getElementById('editArticleDate').value = date;
+        document.getElementById('editArticleReadTime').value = readTime;
+    }
+</script>
 </script>
 </body></html>
