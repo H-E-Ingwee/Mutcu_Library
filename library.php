@@ -4,20 +4,21 @@ $currentUser = currentUser();
 
 $category = $_GET['category'] ?? 'All';
 $q = trim($_GET['q'] ?? '');
-$limit = 12; // Only load 12 books on initial render to keep the page fast
+$limit = 12; // Initial load limit for performance
 
-// Manual fast filtering for the initial render
+// Fetch initial books for the first render
 $sql = 'SELECT * FROM books WHERE 1=1';
 $params = [];
 if ($category !== 'All') { $sql .= ' AND category = ?'; $params[] = $category; }
 if ($q !== '') { $sql .= ' AND (title LIKE ? OR author LIKE ?)'; $params[] = "%$q%"; $params[] = "%$q%"; }
 
-// Count for pagination
+// Count total matching books to know if we need the "Load More" button
 $countStmt = $pdo->prepare(str_replace('SELECT *', 'SELECT COUNT(*)', $sql));
 $countStmt->execute($params);
 $totalBooks = $countStmt->fetchColumn();
 $hasMore = $totalBooks > $limit;
 
+// Default sort is newest first
 $sql .= ' ORDER BY id DESC LIMIT ' . $limit;
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
@@ -27,7 +28,8 @@ processBooks($books);
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MUTCU E-Library | Books</title>
     <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -35,12 +37,7 @@ processBooks($books);
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            theme: {
-                extend: { fontFamily: { heading: ['Montserrat', 'sans-serif'], body: ['Lato', 'sans-serif'], },
-                colors: { brand: { 900: '#0f172a', 800: '#1e293b', 50: '#f8fafc', }, accent: { 500: '#f97316', 600: '#ea580c', } } }
-            }
-        }
+        tailwind.config = { theme: { extend: { fontFamily: { heading: ['Montserrat', 'sans-serif'], body: ['Lato', 'sans-serif'], }, colors: { brand: { 900: '#060B26', 800: '#0B133A', 50: '#F4F6FB', }, accent: { 500: '#FF9800', 600: '#E68A00', }, mutcu: { teal: '#2DD4BF', red: '#FF1A35' } } } } }
     </script>
     <style> h1, h2, h3, h4, h5, h6 { font-family: 'Montserrat', sans-serif; } </style>
 </head>
@@ -49,6 +46,8 @@ processBooks($books);
     
     <main class="flex-grow py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Page Header & Search -->
             <div class="flex flex-col lg:flex-row justify-between items-end mb-10 gap-6">
                 <div class="w-full lg:w-1/2">
                     <h2 class="text-3xl font-extrabold font-heading text-brand-900 mb-2">E-Library Catalog</h2>
@@ -71,7 +70,7 @@ processBooks($books);
                 </div>
             </div>
 
-            <!-- Category Filters -->
+            <!-- Advanced Filters & Sorting -->
             <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-12">
                 <div class="flex flex-wrap gap-3">
                     <?php foreach (['All','Faith','Leadership','Purpose','Relationships'] as $cat): ?>
@@ -82,7 +81,7 @@ processBooks($books);
                     <?php endforeach; ?>
                 </div>
                 
-                <!-- NEW: Advanced Sort Dropdown -->
+                <!-- Advanced Sort Dropdown -->
                 <div class="flex items-center gap-3 bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm w-full md:w-auto">
                     <i class="bi bi-sort-down text-slate-400"></i>
                     <select id="sortSelect" class="bg-transparent border-none text-brand-900 text-sm font-bold outline-none cursor-pointer focus:ring-0 w-full">
@@ -93,13 +92,14 @@ processBooks($books);
                 </div>
             </div>
 
+            <!-- Loader -->
             <div id="grid-loader" class="hidden flex justify-center py-12">
                 <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-500"></div>
             </div>
             
             <!-- Book Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8" id="book-grid">
-                <?php if (!$books): ?>
+                <?php if (empty($books)): ?>
                     <div class="col-span-full text-center py-16 bg-white rounded-2xl border border-slate-200">
                         <i class="bi bi-journal-x text-slate-300 text-6xl mb-4 block"></i>
                         <h3 class="font-extrabold font-heading text-2xl text-brand-900 mb-2">No books found</h3>
@@ -130,33 +130,33 @@ processBooks($books);
                                 <p class="text-sm text-slate-600 flex-grow mb-4 line-clamp-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"><?=htmlspecialchars($book['description'])?></p>
                                 
                                 <div class="flex gap-2 mt-auto">
-                                <button onclick="event.stopPropagation(); toggleBookmark(<?=$book['id']?>, this)" class="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors bg-white">
-                                    <i class="bi bi-bookmark"></i>
-                                </button>
-                                <a href="download.php?id=<?=$book['id']?>" target="_blank" onclick="event.stopPropagation();" class="flex-grow flex items-center justify-center bg-brand-900 hover:bg-brand-800 text-white rounded-xl font-semibold text-sm transition-colors text-decoration-none">
-                                    <i class="bi bi-cloud-arrow-down mr-2"></i> Access
-                                </a>
+                                    <button onclick="event.stopPropagation(); toggleBookmark(<?=$book['id']?>, this)" class="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors bg-white">
+                                        <i class="bi bi-bookmark"></i>
+                                    </button>
+                                    <a href="download.php?id=<?=$book['id']?>" target="_blank" onclick="event.stopPropagation();" class="flex-grow flex items-center justify-center bg-brand-900 hover:bg-brand-800 text-white rounded-xl font-semibold text-sm transition-colors text-decoration-none">
+                                        <i class="bi bi-cloud-arrow-down mr-2"></i> Access
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+
+            <!-- Dynamic Load More Container -->
+            <div id="load-more-container" class="text-center mt-12 <?= $hasMore ? '' : 'hidden' ?>">
+                <button id="load-more-btn" class="px-8 py-3 bg-white border border-slate-200 text-brand-900 font-bold rounded-full hover:bg-slate-50 transition-colors shadow-sm">
+                    Load More Books <i class="bi bi-arrow-down-short ml-1"></i>
+                </button>
+            </div>
+
         </div>
-
-        <!-- NEW LOAD MORE BUTTON -->
-        <div id="load-more-container" class="text-center mt-12 <?= $hasMore ? '' : 'hidden' ?>">
-            <button id="load-more-btn" class="px-8 py-3 bg-white border border-slate-200 text-brand-900 font-bold rounded-full hover:bg-slate-50 transition-colors shadow-sm">
-                Load More Books <i class="bi bi-arrow-down-short ml-1"></i>
-            </button>
-        </div>
-
-    </div>
-</main>
-
-<?php include __DIR__.'/partials/footer.php'; ?>
-
-<script> const MUTCU = { user: <?=json_encode($currentUser)?>, books: [] };</script>
-<script src="assets/js/app.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    </main>
+    
+    <?php include __DIR__.'/partials/footer.php'; ?>
+    
+    <script> const MUTCU = { user: <?=json_encode($currentUser)?>, books: [] };</script>
+    <script src="assets/js/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
