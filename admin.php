@@ -7,7 +7,7 @@ if (!$currentUser || !isAdmin()) {
 }
 $books = getBooks();
 $articles = getArticles();
-$users = getUsers(); // Fetches all users
+$users = getUsers(); 
 $stats = getStats();
 $categoryData = getCategoryDistribution();
 $weeklyData = getWeeklyInteractions();
@@ -177,11 +177,23 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                                         <td class="p-4"><img src="<?=htmlspecialchars($book['cover'])?>" class="w-12 h-16 object-cover rounded shadow-sm border border-slate-200"></td>
                                         <td class="p-4"><div class="font-bold text-brand-900 mb-1"><?=htmlspecialchars($book['title'])?></div><div class="text-slate-500 text-xs"><?=htmlspecialchars($book['author'])?></div></td>
                                         <td class="p-4"><span class="bg-slate-100 text-slate-700 text-xs font-bold px-2 py-1 rounded-md border border-slate-200"><?=htmlspecialchars($book['category'])?></span></td>
-                                        <td class="p-4 text-right space-x-2">
+                                        
+                                        <!-- NEW: Featured Star & Existing Actions -->
+                                        <td class="p-4 text-right flex justify-end gap-2 items-center h-full">
+                                            <form method="post" action="actions.php" class="m-0 inline-flex items-center">
+                                                <input type="hidden" name="action" value="toggle_feature_book">
+                                                <input type="hidden" name="book_id" value="<?=$book['id']?>">
+                                                <input type="hidden" name="return_url" value="admin.php">
+                                                <button type="submit" class="p-2 <?= $book['is_featured'] ? 'bg-yellow-50 text-yellow-500 hover:bg-yellow-100' : 'bg-slate-50 text-slate-400 hover:bg-slate-200' ?> rounded-lg transition-colors border-0" title="<?= $book['is_featured'] ? 'Remove from Homepage' : 'Feature on Homepage' ?>">
+                                                    <i class="bi <?= $book['is_featured'] ? 'bi-star-fill' : 'bi-star' ?>"></i>
+                                                </button>
+                                            </form>
                                             <a href="download.php?id=<?=$book['id']?>" target="_blank" class="inline-flex p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-decoration-none" title="View Link"><i class="bi bi-link-45deg"></i></a>
                                             <button class="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors border-0" title="Edit" data-bs-toggle="modal" data-bs-target="#editBookModal" onclick="populateEditBookModal(<?=$book['id']?>, '<?=htmlspecialchars(addslashes($book['title']))?>', '<?=htmlspecialchars(addslashes($book['author']))?>', '<?=htmlspecialchars($book['category'])?>', '<?=htmlspecialchars(addslashes($book['drive_link']))?>', '<?=htmlspecialchars(addslashes($book['description']))?>', '<?=htmlspecialchars(addslashes($book['cover']))?>')"><i class="bi bi-pencil"></i></button>
-                                            <form method="post" action="actions.php" class="inline-block m-0">
-                                                <input type="hidden" name="action" value="delete_book"><input type="hidden" name="book_id" value="<?=$book['id']?>"><input type="hidden" name="return_url" value="admin.php">
+                                            <form method="post" action="actions.php" class="m-0 inline-flex items-center">
+                                                <input type="hidden" name="action" value="delete_book">
+                                                <input type="hidden" name="book_id" value="<?=$book['id']?>">
+                                                <input type="hidden" name="return_url" value="admin.php">
                                                 <button type="submit" class="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition-colors border-0" title="Delete" onclick="return confirm('Delete this book?');"><i class="bi bi-trash"></i></button>
                                             </form>
                                         </td>
@@ -219,10 +231,25 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                                         <td class="p-4 text-slate-500 font-semibold">#<?=$art['id']?></td>
                                         <td class="p-4"><div class="font-bold text-brand-900 mb-1"><?=htmlspecialchars($art['title'])?></div><div class="text-slate-500 text-xs">By <?=htmlspecialchars($art['author'])?></div></td>
                                         <td class="p-4 text-slate-600"><div><?=htmlspecialchars($art['date'])?></div><div class="text-xs text-slate-400 mt-1"><i class="bi bi-clock"></i> <?=htmlspecialchars($art['read_time'])?></div></td>
-                                        <td class="p-4 text-right space-x-2">
+                                        
+                                        <!-- NEW: Featured Star & Existing Actions -->
+                                        <td class="p-4 text-right flex justify-end gap-2 items-center h-full">
+                                            <form method="post" action="actions.php" class="m-0 inline-flex items-center">
+                                                <input type="hidden" name="action" value="toggle_feature_article">
+                                                <input type="hidden" name="article_id" value="<?=$art['id']?>">
+                                                <input type="hidden" name="return_url" value="admin.php">
+                                                <button type="submit" class="p-2 <?= $art['is_featured'] ? 'bg-yellow-50 text-yellow-500 hover:bg-yellow-100' : 'bg-slate-50 text-slate-400 hover:bg-slate-200' ?> rounded-lg transition-colors border-0" title="<?= $art['is_featured'] ? 'Remove from Homepage' : 'Feature on Homepage' ?>">
+                                                    <i class="bi <?= $art['is_featured'] ? 'bi-star-fill' : 'bi-star' ?>"></i>
+                                                </button>
+                                            </form>
                                             <a href="article.php?id=<?=$art['id']?>" target="_blank" class="inline-flex p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-decoration-none" title="View Link"><i class="bi bi-box-arrow-up-right"></i></a>
                                             <button class="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors border-0" title="Edit" data-bs-toggle="modal" data-bs-target="#editArticleModal" onclick="populateEditArticleModal(<?=$art['id']?>, '<?=htmlspecialchars(addslashes($art['title']))?>', '<?=htmlspecialchars(addslashes($art['author']))?>', '<?=htmlspecialchars(addslashes($art['abstract']))?>', '<?=htmlspecialchars(addslashes($art['link']))?>', '<?=htmlspecialchars(addslashes($art['date']))?>', '<?=htmlspecialchars(addslashes($art['read_time']))?>')"><i class="bi bi-pencil"></i></button>
-                                            <form method="post" action="actions.php" class="inline-block m-0"><input type="hidden" name="action" value="delete_article"><input type="hidden" name="article_id" value="<?=$art['id']?>"><input type="hidden" name="return_url" value="admin.php"><button type="submit" class="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition-colors border-0" title="Delete" onclick="return confirm('Delete this article?');"><i class="bi bi-trash"></i></button></form>
+                                            <form method="post" action="actions.php" class="m-0 inline-flex items-center">
+                                                <input type="hidden" name="action" value="delete_article">
+                                                <input type="hidden" name="article_id" value="<?=$art['id']?>">
+                                                <input type="hidden" name="return_url" value="admin.php">
+                                                <button type="submit" class="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition-colors border-0" title="Delete" onclick="return confirm('Delete this article?');"><i class="bi bi-trash"></i></button>
+                                            </form>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>
@@ -303,7 +330,6 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
     </main>
 
     <!-- Admin Modals -->
-    
     <!-- Add Book Modal -->
     <div class="modal fade" id="addBookModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-2xl border-0 shadow-2xl overflow-hidden"><div class="modal-header bg-brand-900 border-0 p-5"><h5 class="modal-title font-heading font-bold text-white"><i class="bi bi-journal-plus mr-2 text-accent-500"></i> Add New Book</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <form method="post" action="actions.php" enctype="multipart/form-data">
@@ -334,13 +360,11 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
         </form>
     </div></div></div>
 
-    <!-- Add Article Modal (WITH AI BUTTON) -->
+    <!-- Add Article Modal -->
     <div class="modal fade" id="addArticleModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-2xl border-0 shadow-2xl overflow-hidden"><div class="modal-header bg-brand-900 p-5"><h5 class="modal-title font-heading font-bold text-white"><i class="bi bi-file-earmark-plus mr-2 text-accent-500"></i> Add Article</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <form method="post" action="actions.php"><div class="modal-body p-6 bg-brand-50 space-y-4"><input type="hidden" name="action" value="add_article"><input type="hidden" name="return_url" value="admin.php">
             <div><label class="block text-sm font-bold text-slate-700 mb-1">Title</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="title" required></div>
             <div><label class="block text-sm font-bold text-slate-700 mb-1">Author</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="author" required></div>
-            
-            <!-- AI Auto Fill Section -->
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">Link</label>
                 <div class="flex gap-2">
@@ -354,17 +378,13 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                 <label class="block text-sm font-bold text-slate-700 mb-1">Abstract Summary</label>
                 <textarea class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none h-24" name="abstract" id="addArticleAbstractInput" required></textarea>
             </div>
-            <!-- End AI Section -->
-
             <div class="flex gap-4"><div class="flex-1"><label class="block text-sm font-bold text-slate-700 mb-1">Date</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="date" value="<?=date('M d, Y')?>" required></div><div class="flex-1"><label class="block text-sm font-bold text-slate-700 mb-1">Read Time</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="read_time" value="5 min read" required></div></div></div><div class="modal-footer bg-white p-4"><button type="button" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 border-0" data-bs-dismiss="modal">Cancel</button><button type="submit" class="px-5 py-2.5 bg-accent-500 text-white rounded-xl font-bold border-0">Save Article</button></div></form></div></div></div>
     
-    <!-- Edit Article Modal (WITH AI BUTTON) -->
+    <!-- Edit Article Modal -->
     <div class="modal fade" id="editArticleModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-2xl border-0 shadow-2xl overflow-hidden"><div class="modal-header bg-brand-900 p-5"><h5 class="modal-title font-heading font-bold text-white"><i class="bi bi-pencil-square mr-2 text-accent-500"></i> Edit Article</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <form method="post" action="actions.php"><div class="modal-body p-6 bg-brand-50 space-y-4"><input type="hidden" name="action" value="edit_article"><input type="hidden" name="article_id" id="editArticleId"><input type="hidden" name="return_url" value="admin.php">
             <div><label class="block text-sm font-bold text-slate-700 mb-1">Title</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="title" id="editArticleTitle" required></div>
             <div><label class="block text-sm font-bold text-slate-700 mb-1">Author</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="author" id="editArticleAuthor" required></div>
-            
-            <!-- AI Auto Fill Section -->
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">Link</label>
                 <div class="flex gap-2">
@@ -378,8 +398,6 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                 <label class="block text-sm font-bold text-slate-700 mb-1">Abstract Summary</label>
                 <textarea class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none h-24" name="abstract" id="editArticleAbstract" required></textarea>
             </div>
-            <!-- End AI Section -->
-
             <div class="flex gap-4"><div class="flex-1"><label class="block text-sm font-bold text-slate-700 mb-1">Date</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="date" id="editArticleDate" required></div><div class="flex-1"><label class="block text-sm font-bold text-slate-700 mb-1">Read Time</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="read_time" id="editArticleReadTime" required></div></div></div><div class="modal-footer bg-white p-4"><button type="button" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 border-0" data-bs-dismiss="modal">Cancel</button><button type="submit" class="px-5 py-2.5 bg-accent-500 text-white rounded-xl font-bold border-0">Update</button></div></form></div></div></div>
 
     <!-- Edit User Modal -->
@@ -406,7 +424,6 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 
     <?php include __DIR__.'/partials/footer.php'; ?>
     
-    <!-- Required Chart.js Library -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script> const MUTCU = { user: <?=json_encode($currentUser)?>, books: <?=json_encode($books)?>, articles: <?=json_encode($articles)?>, stats: <?=json_encode($stats)?> };</script>
     <script src="assets/js/app.js"></script>
@@ -422,7 +439,6 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                 const categoryLabels = categoryData.map(item => item.category);
                 const categoryCounts = categoryData.map(item => parseInt(item.count));
 
-                // Chart 1: Uses dynamic labels
                 new Chart(ctx1, {
                     type: 'line',
                     data: { labels: weeklyData.labels, datasets: [{ label: 'Interactions', data: weeklyData.data, borderColor: '#FF9800', backgroundColor: 'rgba(255, 152, 0, 0.1)', fill: true, tension: 0.4, borderWidth: 3, pointBackgroundColor: '#060B26' }] },
@@ -437,7 +453,6 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
             }
         });
 
-        // Search Filters
         document.getElementById('searchBooksAdmin')?.addEventListener('input', function() {
             const query = this.value.toLowerCase();
             document.querySelectorAll('#booksTable tbody tr').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none'; });
@@ -453,7 +468,6 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
             document.querySelectorAll('#usersTable tbody tr').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none'; });
         });
 
-        // Modals Data Population
         function populateEditBookModal(id, title, author, category, driveLink, description, cover) {
             document.getElementById('editBookId').value = id;
             document.getElementById('editBookTitle').value = title;
@@ -499,32 +513,19 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
             }
         }
 
-        // --- AI Auto-Abstract Fetcher ---
         async function generateAbstract(linkInputId, abstractFieldId) {
             const linkUrl = document.getElementById(linkInputId).value;
             const abstractField = document.getElementById(abstractFieldId);
-            
-            if (!linkUrl) {
-                alert('Please paste an article URL in the link box first!');
-                return;
-            }
-            
+            if (!linkUrl) { alert('Please paste an article URL in the link box first!'); return; }
             abstractField.value = "🤖 AI is reading the article and generating a summary. Please wait...";
-            
             try {
                 const formData = new FormData();
                 formData.append('action', 'generate_abstract');
                 formData.append('link', linkUrl);
                 formData.append('csrf_token', document.getElementById('csrf_token_global').value);
-                
                 const response = await fetch('actions.php', { method: 'POST', body: formData });
                 const data = await response.json();
-                
-                if (data.error) {
-                    abstractField.value = data.error;
-                } else {
-                    abstractField.value = data.abstract;
-                }
+                if (data.error) { abstractField.value = data.error; } else { abstractField.value = data.abstract; }
             } catch (error) {
                 console.error("AI Generation failed:", error);
                 abstractField.value = "Error connecting to AI server.";
