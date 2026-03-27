@@ -46,7 +46,6 @@
                         </a>
                     </li>
                     <li class="flex items-start text-slate-400"><i class="bi bi-hdd-network mr-3 text-lg"></i> Hosted via G-Drive</li>
-                    <li class="flex items-start text-slate-400"><i class="bi bi-code-square mr-3 text-lg"></i> v3.0 Tailwind Release</li>
                 </ul>
             </div>
         </div>
