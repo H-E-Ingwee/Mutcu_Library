@@ -31,9 +31,15 @@
             </div>
             
             <div class="md:col-span-3">
-                <h5 class="text-white font-bold font-heading mb-6 tracking-wide">Legal & System</h5>
+                <h5 class="text-white font-bold font-heading mb-6 tracking-wide">Contact & Legal</h5>
                 <ul class="space-y-3 text-sm font-medium pl-0 list-none">
-                    <!-- NEW POLICY LINK -->
+                    <!-- NEW EMAIL LINK -->
+                    <li>
+                        <a href="mailto:mutcunion@gmail.com" class="flex items-center text-slate-400 hover:text-accent-500 transition-colors text-decoration-none">
+                            <i class="bi bi-envelope mr-3 text-lg"></i> mutcunion@gmail.com
+                        </a>
+                    </li>
+                    <!-- POLICY LINK -->
                     <li>
                         <a href="policy.php" class="flex items-center text-slate-400 hover:text-accent-500 transition-colors text-decoration-none">
                             <i class="bi bi-shield-check mr-3 text-lg"></i> Policy & Copyright
