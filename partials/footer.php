@@ -3,15 +3,18 @@
         <div class="grid grid-cols-1 md:grid-cols-12 gap-12">
             <div class="md:col-span-5">
                 <h4 class="font-heading text-2xl font-extrabold text-white flex items-center mb-6">
+                    <!-- Updated with the brand's teal highlight as a subtle detail -->
                     <i class="bi bi-book-half text-accent-500 mr-3"></i> MUTCU
                 </h4>
                 <p class="mb-6 leading-relaxed text-sm max-w-md">
                     A digital platform providing Murang'a University of Technology Christian Union members structured, easy, and copyright-compliant access to Christ-centered educational resources.
                 </p>
-                <div class="flex space-x-4">
-                    <a href="#" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-300 hover:bg-accent-500 hover:text-white transition-all duration-300 text-decoration-none"><i class="bi bi-facebook"></i></a>
-                    <a href="#" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-300 hover:bg-accent-500 hover:text-white transition-all duration-300 text-decoration-none"><i class="bi bi-twitter-x"></i></a>
-                    <a href="#" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-300 hover:bg-accent-500 hover:text-white transition-all duration-300 text-decoration-none"><i class="bi bi-instagram"></i></a>
+                <div class="flex flex-wrap gap-3">
+                    <a href="https://www.facebook.com/people/Muranga-University-of-Technology-Christian-Union-1/100068859581695/" target="_blank" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-300 hover:bg-accent-500 hover:text-white transition-all duration-300 text-decoration-none" title="Facebook"><i class="bi bi-facebook"></i></a>
+                    <a href="https://www.instagram.com/muranga_university_cu/" target="_blank" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-300 hover:bg-accent-500 hover:text-white transition-all duration-300 text-decoration-none" title="Instagram"><i class="bi bi-instagram"></i></a>
+                    <a href="https://www.tiktok.com/@mutcu001" target="_blank" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-300 hover:bg-accent-500 hover:text-white transition-all duration-300 text-decoration-none" title="TikTok"><i class="bi bi-tiktok"></i></a>
+                    <a href="https://www.youtube.com/@murangauniversityCU" target="_blank" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-300 hover:bg-accent-500 hover:text-white transition-all duration-300 text-decoration-none" title="YouTube"><i class="bi bi-youtube"></i></a>
+                    <a href="https://mutcu.org/" target="_blank" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-300 hover:bg-accent-500 hover:text-white transition-all duration-300 text-decoration-none" title="Official Website"><i class="bi bi-globe"></i></a>
                 </div>
             </div>
             
@@ -28,22 +31,28 @@
             </div>
             
             <div class="md:col-span-3">
-                <h5 class="text-white font-bold font-heading mb-6 tracking-wide">System Details</h5>
-                <ul class="space-y-4 text-sm font-medium pl-0 list-none">
-                    <li class="flex items-start"><i class="bi bi-hdd-network mr-3 text-accent-500 text-lg"></i> Hosted via Google Drive</li>
-                    <li class="flex items-start"><i class="bi bi-shield-check mr-3 text-emerald-400 text-lg"></i> Copyright Compliant</li>
-                    <li class="flex items-start"><i class="bi bi-code-square mr-3 text-blue-400 text-lg"></i> v3.0 Tailwind Release</li>
+                <h5 class="text-white font-bold font-heading mb-6 tracking-wide">Legal & System</h5>
+                <ul class="space-y-3 text-sm font-medium pl-0 list-none">
+                    <!-- NEW POLICY LINK -->
+                    <li>
+                        <a href="policy.php" class="flex items-center text-slate-400 hover:text-accent-500 transition-colors text-decoration-none">
+                            <i class="bi bi-shield-check mr-3 text-lg"></i> Policy & Copyright
+                        </a>
+                    </li>
+                    <li class="flex items-start text-slate-400"><i class="bi bi-hdd-network mr-3 text-lg"></i> Hosted via G-Drive</li>
+                    <li class="flex items-start text-slate-400"><i class="bi bi-code-square mr-3 text-lg"></i> v3.0 Tailwind Release</li>
                 </ul>
             </div>
         </div>
         
-        <div class="border-t border-slate-800 mt-16 pt-8 text-center text-sm font-medium">
-            &copy; <?= date('Y') ?> MUTCU E-Library System. Proposed & Built by Brian Ingwee.
+        <div class="border-t border-slate-800 mt-16 pt-8 text-center text-sm font-medium flex flex-col md:flex-row justify-between items-center">
+            <span>&copy; <?= date('Y') ?> MUTCU E-Library System. Proposed & Built by Brian Ingwee.</span>
+            <span class="mt-2 md:mt-0 text-slate-500">For Educational & Internal Use Only.</span>
         </div>
     </div>
 </footer>
 
-<!-- Toast Container (Bootstrap logic, Tailwind styling overrides where possible) -->
+<!-- Toast Container -->
 <div class="toast-container position-fixed bottom-0 end-0 p-4 z-[9999]">
     <div id="flashToast" class="toast align-items-center text-white border-0 shadow-2xl rounded-xl" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="d-flex">
@@ -53,7 +62,7 @@
     </div>
 </div>
 
-<!-- Quick View Modal (Using Bootstrap JS, styled with Tailwind) -->
+<!-- Quick View Modal -->
 <div class="modal fade" id="quickViewModal" tabindex="-1" aria-labelledby="quickViewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content bg-white rounded-2xl border-0 shadow-2xl overflow-hidden">
@@ -91,7 +100,6 @@
 </div>
 
 <script>
-    // Improved Flash Messages Logic
     document.addEventListener('DOMContentLoaded', function() {
         const flashSuccess = '<?php echo addslashes($_SESSION['flash_success'] ?? ''); ?>';
         const flashError = '<?php echo addslashes($_SESSION['flash_error'] ?? ''); ?>';
@@ -101,10 +109,8 @@
             const toastBody = document.getElementById('toastMessage');
             toastBody.textContent = message;
             
-            // Clear existing background classes
             toastEl.classList.remove('bg-emerald-600', 'bg-rose-600', 'bg-brand-800');
             
-            // Apply Tailwind colors dynamically based on type
             if(type === 'success') {
                 toastEl.classList.add('bg-emerald-600');
             } else if (type === 'danger') {
