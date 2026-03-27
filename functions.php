@@ -3,6 +3,11 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// NEW: Safely load the configuration file so the OpenAI API Key is recognized!
+if (file_exists(__DIR__ . '/config.php')) {
+    require_once __DIR__ . '/config.php';
+}
+
 // --- CSRF SECURITY ---
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -59,7 +64,6 @@ function isAdmin() {
     return $user && $user['role'] === 'admin';
 }
 
-// Generates MUTCU Branded placeholder images dynamically
 function getSymbolicCover($category, $title) {
     $shortTitle = mb_strimwidth($title, 0, 30, "...");
     $urlEncodedTitle = urlencode($shortTitle);
