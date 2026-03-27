@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     
-    // GLOBAL CSRF FORM PROTECTOR
-    // Automatically injects the CSRF token into every POST form on the website before it submits
+    // GLOBAL CSRF PROTECTOR: Auto-injects token into every POST form
     document.addEventListener('submit', function(e) {
         const form = e.target;
         if (form && form.tagName === 'FORM' && form.method.toUpperCase() === 'POST') {
@@ -16,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Set up filter buttons
+    // Library Filters
     const filterBtns = document.querySelectorAll('.ajax-filter');
     if (filterBtns.length > 0) {
         filterBtns.forEach(btn => {
@@ -41,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Listen for Sort Dropdown changes
+    // Sort Dropdown
     const sortSelect = document.getElementById('sortSelect');
     if (sortSelect) {
         sortSelect.addEventListener('change', () => {
@@ -50,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Set up search form
+    // Search Form
     const searchForm = document.getElementById('searchForm');
     if (searchForm) {
         searchForm.addEventListener('submit', (e) => {
@@ -59,33 +58,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const url = new URL(window.location);
             url.searchParams.set('q', q);
             window.history.pushState({}, '', url);
-            // Fetch new search starting at page 1
             currentPage = 1;
             fetchFilteredBooks(true);
         });
     }
 
-    // Set up Load More Button
+    // Load More Button
     const loadMoreBtn = document.getElementById('load-more-btn');
     if (loadMoreBtn) {
         loadMoreBtn.addEventListener('click', () => {
             currentPage++;
-            fetchFilteredBooks(false); // false means append, don't clear
+            fetchFilteredBooks(false); 
         });
     }
 });
 
-// State for pagination
 let currentPage = 1;
 
-// Fetch books based on current parameters
 async function fetchFilteredBooks(reset = true) {
     const searchInput = document.getElementById('searchInput');
     const q = searchInput ? searchInput.value.trim() : '';
     const activeFilter = document.querySelector('.ajax-filter.bg-brand-900');
     const category = activeFilter ? activeFilter.getAttribute('data-category') : 'All';
-    
-    // Grab active sort parameter
     const sortSelect = document.getElementById('sortSelect');
     const sort = sortSelect ? sortSelect.value : 'newest';
 
@@ -99,12 +93,10 @@ async function fetchFilteredBooks(reset = true) {
         if(grid) grid.innerHTML = '';
         if(loadMoreContainer) loadMoreContainer.classList.add('hidden');
     } else {
-        // Show mini loading state in the button
         if(loadMoreBtn) loadMoreBtn.innerHTML = '<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span> Loading...';
     }
 
     try {
-        // Pass the sort parameter into the API
         const response = await fetch(`actions.php?action=fetch_books&q=${encodeURIComponent(q)}&category=${encodeURIComponent(category)}&sort=${encodeURIComponent(sort)}&page=${currentPage}`);
         const data = await response.json();
         const books = data.books || [];
@@ -150,7 +142,6 @@ async function fetchFilteredBooks(reset = true) {
             });
         }
 
-        // Toggle "Load More" button visibility
         if (data.hasMore) {
             if(loadMoreContainer) loadMoreContainer.classList.remove('hidden');
             if(loadMoreBtn) loadMoreBtn.innerHTML = 'Load More Books <i class="bi bi-arrow-down-short ml-1"></i>';
@@ -181,11 +172,10 @@ window.openQuickView = async function(el) {
     let modal = new bootstrap.Modal(document.getElementById('quickViewModal'));
     modal.show();
 
-    // Fetch and render Related Books
     const relatedContainer = document.getElementById('quickViewRelatedContainer');
     const relatedGrid = document.getElementById('quickViewRelatedGrid');
     if (relatedContainer && relatedGrid) {
-        relatedContainer.classList.add('hidden'); // Hide while loading
+        relatedContainer.classList.add('hidden'); 
         try {
             const response = await fetch(`actions.php?action=fetch_related&id=${bookId}&category=${encodeURIComponent(category)}`);
             const relatedBooks = await response.json();
@@ -193,7 +183,6 @@ window.openQuickView = async function(el) {
             if (relatedBooks.length > 0) {
                 relatedGrid.innerHTML = '';
                 relatedBooks.forEach(book => {
-                    // Clicking a related book re-triggers the Quick View for that new book
                     relatedGrid.innerHTML += `
                         <div class="cursor-pointer group" onclick="openQuickView(this)" data-book-id="${book.id}" data-title="${book.title.replace(/"/g, '&quot;')}" data-author="${book.author.replace(/"/g, '&quot;')}" data-description="${book.description.replace(/"/g, '&quot;')}" data-cover="${book.cover}" data-category="${book.category}" data-drive-link="${book.drive_link}">
                             <div class="relative pt-[140%] overflow-hidden rounded-lg shadow-sm border border-slate-200">
@@ -209,7 +198,6 @@ window.openQuickView = async function(el) {
     }
 };
 
-// Secure POST Bookmark function
 window.toggleBookmark = async function(bookId, btnElement) {
     if (typeof MUTCU === 'undefined' || !MUTCU.user) {
         window.location.href = 'login.php';
@@ -219,7 +207,7 @@ window.toggleBookmark = async function(bookId, btnElement) {
         const formData = new FormData();
         formData.append('action', 'toggle_bookmark');
         formData.append('book_id', bookId);
-        formData.append('csrf_token', document.getElementById('csrf_token_global').value); // ADD CSRF
+        formData.append('csrf_token', document.getElementById('csrf_token_global').value); // CSRF Secure
 
         const response = await fetch('actions.php', { method: 'POST', body: formData });
         const result = await response.json();
@@ -241,21 +229,18 @@ window.toggleBookmark = async function(bookId, btnElement) {
         }
     } catch (error) {
         console.error('Bookmark toggle failed', error);
-        alert('Could not update bookmark due to server configuration.');
     }
 };
 
-// Update Read Status in Profile
 window.updateReadStatus = async function(bookId, status) {
     try {
         const formData = new FormData();
         formData.append('action', 'update_read_status');
         formData.append('book_id', bookId);
         formData.append('status', status);
-        formData.append('csrf_token', document.getElementById('csrf_token_global').value); // ADD CSRF
+        formData.append('csrf_token', document.getElementById('csrf_token_global').value); // CSRF Secure
         
         await fetch('actions.php', { method: 'POST', body: formData });
-        // Status updates invisibly in the background
     } catch (error) {
         console.error('Failed to update status', error);
     }
