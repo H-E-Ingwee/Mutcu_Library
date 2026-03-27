@@ -103,8 +103,8 @@ The system automatically creates two super admin accounts:
 
 | Name | Email | Password | Role |
 |------|-------|----------|------|
-| Brian Ingwee | Ingweplex@gmail.com | Ingweplex | Admin |
-| Natasha Amani | MutcuSec@gmail.com | MutcuSec@2026 | Admin |
+| User| I*****@gmail.com | ********** | Admin |
+| User| M*****@gmail.com | ************| Admin |
 
 > ⚠️ **Important**: Change these passwords immediately after first login!
 
@@ -489,8 +489,8 @@ All pages are fully responsive and mobile-friendly.
 # Visit: http://localhost/Mutcu_Library
 
 # Login with admin credentials:
-# Email: Ingweplex@gmail.com
-# Password: Ingweplex
+# Email: I****@gmail.com
+# Password: ******
 
 # Or register new account:
 # Visit: http://localhost/Mutcu_Library/register.php
