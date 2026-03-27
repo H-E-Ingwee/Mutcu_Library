@@ -17,8 +17,6 @@ if ($q !== '') {
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MUTCU E-Library | Books</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -27,13 +25,8 @@ if ($q !== '') {
     <script>
         tailwind.config = {
             theme: {
-                extend: {
-                    fontFamily: { heading: ['Montserrat', 'sans-serif'], body: ['Lato', 'sans-serif'], },
-                    colors: {
-                        brand: { 900: '#0f172a', 800: '#1e293b', 50: '#f8fafc', },
-                        accent: { 500: '#f97316', 600: '#ea580c', }
-                    }
-                }
+                extend: { fontFamily: { heading: ['Montserrat', 'sans-serif'], body: ['Lato', 'sans-serif'], },
+                colors: { brand: { 900: '#0f172a', 800: '#1e293b', 50: '#f8fafc', }, accent: { 500: '#f97316', 600: '#ea580c', } } }
             }
         }
     </script>
@@ -44,7 +37,6 @@ if ($q !== '') {
     
     <main class="flex-grow py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Header & Search Area -->
             <div class="flex flex-col lg:flex-row justify-between items-end mb-10 gap-6">
                 <div class="w-full lg:w-1/2">
                     <h2 class="text-3xl font-extrabold font-heading text-brand-900 mb-2">E-Library Catalog</h2>
@@ -60,8 +52,7 @@ if ($q !== '') {
                         <input id="searchInput" type="text" name="q" value="<?=htmlspecialchars($q)?>" 
                                class="block w-full pl-11 pr-24 py-4 rounded-full border border-slate-200 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 outline-none text-slate-700 bg-white transition-all" 
                                placeholder="Search books by title or author...">
-                        <input type="hidden" name="category" value="<?=htmlspecialchars($category)?>" />
-                        <button type="submit" class="absolute inset-y-1.5 right-1.5 px-6 bg-accent-500 hover:bg-accent-600 text-white font-bold rounded-full transition-colors">
+                        <button type="submit" class="absolute inset-y-1.5 right-1.5 px-6 bg-accent-500 hover:bg-accent-600 text-white font-bold rounded-full transition-colors border-0">
                             Find
                         </button>
                     </form>
@@ -71,10 +62,10 @@ if ($q !== '') {
             <!-- Category Filters -->
             <div class="flex flex-wrap gap-3 mb-12">
                 <?php foreach (['All','Faith','Leadership','Purpose','Relationships'] as $cat): ?>
-                    <a href="#" data-category="<?=urlencode($cat)?>" 
-                       class="ajax-filter px-5 py-2 rounded-full font-semibold text-sm transition-all duration-300 border <?=($category=== $cat ? 'bg-brand-900 text-white border-brand-900 shadow-md' : 'bg-white text-brand-900 border-slate-200 hover:border-brand-900 text-decoration-none')?>">
+                    <button data-category="<?=urlencode($cat)?>" 
+                       class="ajax-filter px-5 py-2 rounded-full font-semibold text-sm transition-all duration-300 border <?=($category === $cat ? 'bg-brand-900 text-white border-brand-900 shadow-md' : 'bg-white text-brand-900 border-slate-200 hover:border-brand-900')?>">
                        <?=htmlspecialchars($cat)?> Books
-                    </a>
+                    </button>
                 <?php endforeach; ?>
             </div>
 
@@ -88,8 +79,7 @@ if ($q !== '') {
                     <div class="col-span-full text-center py-16 bg-white rounded-2xl border border-slate-200">
                         <i class="bi bi-journal-x text-slate-300 text-6xl mb-4 block"></i>
                         <h3 class="font-extrabold font-heading text-2xl text-brand-900 mb-2">No books found</h3>
-                        <p class="text-slate-500 mb-6">Try adjusting your search keywords or filter criteria.</p>
-                        <a href="library.php" class="inline-flex px-6 py-2 border border-slate-300 rounded-full font-bold text-slate-600 hover:bg-slate-50 transition-colors text-decoration-none">Clear Search</a>
+                        <p class="text-slate-500">Try adjusting your search keywords or filter criteria.</p>
                     </div>
                 <?php else: ?>
                     <?php foreach ($books as $book): ?>
@@ -133,7 +123,7 @@ if ($q !== '') {
     
     <?php include __DIR__.'/partials/footer.php'; ?>
     
-    <script> const MUTCU = { user: <?=json_encode($currentUser)?>, books: <?=json_encode(getBooks())?> };</script>
+    <script> const MUTCU = { user: <?=json_encode($currentUser)?>, books: [] };</script>
     <script src="assets/js/app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
