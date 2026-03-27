@@ -4,7 +4,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 require_once __DIR__ . '/db.php';
 
-// Try to auto-create missing tables, but fail silently if permissions are restricted
+// --- DATABASE AUTO-FIXER ---
 try {
     global $pdo;
     $pdo->exec("CREATE TABLE IF NOT EXISTS user_bookmarks (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, book_id INT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY unique_bookmark (user_id, book_id))");
@@ -25,22 +25,32 @@ function isAdmin() {
     return $user && $user['role'] === 'admin';
 }
 
+// FORCE GENERATE IMAGE: Creates an image dynamically from the web with the Book Title
 function getSymbolicCover($category, $title) {
-    $coverBanks = [
-        'Faith' => ['https://images.unsplash.com/photo-1490127252417-7c393f993ee4?w=500&q=80', 'https://images.unsplash.com/photo-1438232992991-995b7058bbb3?w=500&q=80', 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=500&q=80'],
-        'Leadership' => ['https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&q=80', 'https://images.unsplash.com/photo-1519834785169-98be25ec3f84?w=500&q=80', 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=500&q=80'],
-        'Purpose' => ['https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=500&q=80', 'https://images.unsplash.com/photo-1499728603263-13726abce5fd?w=500&q=80', 'https://images.unsplash.com/photo-1464982326199-86f32f81b211?w=500&q=80'],
-        'Relationships' => ['https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=500&q=80', 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=500&q=80', 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=500&q=80']
-    ];
-    $hash = crc32($title ?: 'default');
-    $categoryArray = $coverBanks[$category] ?? $coverBanks['Faith'];
-    return $categoryArray[abs($hash) % count($categoryArray)];
+    // Clean the title so it fits nicely on the image
+    $shortTitle = mb_strimwidth($title, 0, 30, "...");
+    $urlEncodedTitle = urlencode($shortTitle);
+    
+    // Generates a 400x600 image with MUTCU Navy Background (060B26) and Orange Text (FF9800)
+    return "https://placehold.co/400x600/060B26/FF9800?font=Montserrat&text={$urlEncodedTitle}";
 }
 
 function processBooks(&$books) {
     foreach ($books as &$book) {
         $cover = trim($book['cover'] ?? '');
-        if (empty($cover) || strlen($cover) < 10 || !filter_var($cover, FILTER_VALIDATE_URL)) {
+        $isValid = false;
+        
+        // Check if the cover is a valid Web URL OR a valid local uploaded file
+        if (!empty($cover)) {
+            if (filter_var($cover, FILTER_VALIDATE_URL)) {
+                $isValid = true;
+            } elseif (file_exists(__DIR__ . '/' . $cover)) {
+                $isValid = true;
+            }
+        }
+
+        // If no valid image exists, force the system to generate one reading the title
+        if (!$isValid) {
             $book['cover'] = getSymbolicCover($book['category'], $book['title']);
         }
     }
@@ -79,7 +89,7 @@ function getUserBookmarks($userId) {
         $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
         processBooks($books);
         return $books;
-    } catch (PDOException $e) { return []; } // Prevents crash if table is missing
+    } catch (PDOException $e) { return []; }
 }
 
 function getUserReadingHistory($userId) {
@@ -90,7 +100,7 @@ function getUserReadingHistory($userId) {
         $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
         processBooks($books);
         return $books;
-    } catch (PDOException $e) { return []; } // Prevents crash if table is missing
+    } catch (PDOException $e) { return []; }
 }
 
 function getStats() {
