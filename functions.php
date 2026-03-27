@@ -83,19 +83,29 @@ function processBooks(&$books) {
     unset($book);
 }
 
-function getBooks() {
+function getBooks($limit = null) {
     global $pdo;
     try {
-        $stmt = $pdo->query('SELECT * FROM books ORDER BY id DESC');
+        $sql = 'SELECT * FROM books ORDER BY id DESC';
+        if ($limit) {
+            $sql .= ' LIMIT ' . (int)$limit;
+        }
+        $stmt = $pdo->query($sql);
         $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
         processBooks($books);
         return $books;
     } catch (PDOException $e) { return []; }
 }
 
-function getArticles() {
+function getArticles($limit = null) {
     global $pdo;
-    try { return $pdo->query('SELECT * FROM articles ORDER BY id DESC')->fetchAll(PDO::FETCH_ASSOC); } 
+    try { 
+        $sql = 'SELECT * FROM articles ORDER BY id DESC';
+        if ($limit) {
+            $sql .= ' LIMIT ' . (int)$limit;
+        }
+        return $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC); 
+    } 
     catch (PDOException $e) { return []; }
 }
 
