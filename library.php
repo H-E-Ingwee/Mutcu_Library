@@ -1,16 +1,28 @@
 <?php
 require_once __DIR__ . '/functions.php';
 $currentUser = currentUser();
-$books = getBooks();
+
 $category = $_GET['category'] ?? 'All';
 $q = trim($_GET['q'] ?? '');
+$limit = 12; // Only load 12 books on initial render to keep the page fast
 
-if ($category !== 'All') {
-    $books = array_filter($books, fn($b) => strtolower($b['category']) === strtolower($category));
-}
-if ($q !== '') {
-    $books = array_filter($books, fn($b) => str_contains(strtolower($b['title']), strtolower($q)) || str_contains(strtolower($b['author']), strtolower($q)));
-}
+// Manual fast filtering for the initial render
+$sql = 'SELECT * FROM books WHERE 1=1';
+$params = [];
+if ($category !== 'All') { $sql .= ' AND category = ?'; $params[] = $category; }
+if ($q !== '') { $sql .= ' AND (title LIKE ? OR author LIKE ?)'; $params[] = "%$q%"; $params[] = "%$q%"; }
+
+// Count for pagination
+$countStmt = $pdo->prepare(str_replace('SELECT *', 'SELECT COUNT(*)', $sql));
+$countStmt->execute($params);
+$totalBooks = $countStmt->fetchColumn();
+$hasMore = $totalBooks > $limit;
+
+$sql .= ' ORDER BY id DESC LIMIT ' . $limit;
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+$books = $stmt->fetchAll(PDO::FETCH_ASSOC);
+processBooks($books);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -106,25 +118,33 @@ if ($q !== '') {
                                 <p class="text-sm text-slate-600 flex-grow mb-4 line-clamp-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"><?=htmlspecialchars($book['description'])?></p>
                                 
                                 <div class="flex gap-2 mt-auto">
-                                    <button onclick="event.stopPropagation(); toggleBookmark(<?=$book['id']?>, this)" class="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors bg-white">
-                                        <i class="bi bi-bookmark"></i>
-                                    </button>
-                                    <a href="download.php?id=<?=$book['id']?>" target="_blank" onclick="event.stopPropagation();" class="flex-grow flex items-center justify-center bg-brand-900 hover:bg-brand-800 text-white rounded-xl font-semibold text-sm transition-colors text-decoration-none">
-                                        <i class="bi bi-cloud-arrow-down mr-2"></i> Access
-                                    </a>
-                                </div>
+                                <button onclick="event.stopPropagation(); toggleBookmark(<?=$book['id']?>, this)" class="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors bg-white">
+                                    <i class="bi bi-bookmark"></i>
+                                </button>
+                                <a href="download.php?id=<?=$book['id']?>" target="_blank" onclick="event.stopPropagation();" class="flex-grow flex items-center justify-center bg-brand-900 hover:bg-brand-800 text-white rounded-xl font-semibold text-sm transition-colors text-decoration-none">
+                                    <i class="bi bi-cloud-arrow-down mr-2"></i> Access
+                                </a>
                             </div>
                         </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
-    </main>
-    
-    <?php include __DIR__.'/partials/footer.php'; ?>
-    
-    <script> const MUTCU = { user: <?=json_encode($currentUser)?>, books: [] };</script>
-    <script src="assets/js/app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+        <!-- NEW LOAD MORE BUTTON -->
+        <div id="load-more-container" class="text-center mt-12 <?= $hasMore ? '' : 'hidden' ?>">
+            <button id="load-more-btn" class="px-8 py-3 bg-white border border-slate-200 text-brand-900 font-bold rounded-full hover:bg-slate-50 transition-colors shadow-sm">
+                Load More Books <i class="bi bi-arrow-down-short ml-1"></i>
+            </button>
+        </div>
+
+    </div>
+</main>
+
+<?php include __DIR__.'/partials/footer.php'; ?>
+
+<script> const MUTCU = { user: <?=json_encode($currentUser)?>, books: [] };</script>
+<script src="assets/js/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
