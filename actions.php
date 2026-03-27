@@ -7,13 +7,33 @@ $action = $_POST['action'] ?? $_GET['action'] ?? '';
 $returnUrl = $_POST['return_url'] ?? 'home.php';
 $currentUser = currentUser();
 
-// Allow fetch_books via GET, force everything else to be POST
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $action !== 'fetch_books') {
-    header('Location: index.php');
-    exit;
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' && !in_array($action, ['fetch_books', 'toggle_bookmark'])) {
+    header('Location: index.php'); exit;
 }
 
-// --- 1. AJAX ENDPOINTS ---
+// --- FILE UPLOAD HANDLER ---
+function handleFileUpload($fileArray) {
+    if (isset($fileArray) && $fileArray['error'] === UPLOAD_ERR_OK) {
+        $uploadDir = __DIR__ . '/uploads/covers/';
+        // Create directory if it doesn't exist
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+        $ext = strtolower(pathinfo($fileArray['name'], PATHINFO_EXTENSION));
+        // Security check: Only allow images
+        if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'])) {
+            $filename = uniqid('cover_') . '.' . $ext;
+            if (move_uploaded_file($fileArray['tmp_name'], $uploadDir . $filename)) {
+                return 'uploads/covers/' . $filename;
+            }
+        }
+    }
+    return null;
+}
+
+// ==========================================
+// 1. AJAX ENDPOINTS
+// ==========================================
 if ($action === 'fetch_books') {
     header('Content-Type: application/json');
     try {
@@ -30,9 +50,7 @@ if ($action === 'fetch_books') {
         $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
         processBooks($books); 
         echo json_encode($books);
-    } catch(PDOException $e) {
-        echo json_encode([]);
-    }
+    } catch(PDOException $e) { echo json_encode([]); }
     exit;
 }
 
@@ -41,14 +59,10 @@ if ($action === 'toggle_bookmark') {
     if (!$currentUser) { echo json_encode(['status' => 'error', 'message' => 'Not logged in']); exit; }
     $book_id = (int)($_POST['book_id'] ?? 0);
     $user_id = $currentUser['id'];
-    
     try {
-        // Force table creation again just in case
         $pdo->exec("CREATE TABLE IF NOT EXISTS user_bookmarks (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, book_id INT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY unique_bookmark (user_id, book_id))");
-
         $stmt = $pdo->prepare('SELECT id FROM user_bookmarks WHERE user_id = ? AND book_id = ?');
         $stmt->execute([$user_id, $book_id]);
-        
         if ($stmt->fetch()) {
             $pdo->prepare('DELETE FROM user_bookmarks WHERE user_id = ? AND book_id = ?')->execute([$user_id, $book_id]);
             echo json_encode(['status' => 'removed']);
@@ -56,13 +70,13 @@ if ($action === 'toggle_bookmark') {
             $pdo->prepare('INSERT INTO user_bookmarks (user_id, book_id) VALUES (?, ?)')->execute([$user_id, $book_id]);
             echo json_encode(['status' => 'added']);
         }
-    } catch (PDOException $e) {
-        echo json_encode(['status' => 'error', 'message' => 'Database configuration issue. Table could not be modified.']);
-    }
+    } catch (PDOException $e) { echo json_encode(['status' => 'error']); }
     exit;
 }
 
-// --- 2. FORM ACTIONS ---
+// ==========================================
+// 2. FORM ACTIONS
+// ==========================================
 if ($action === 'login') {
     $stmt = $pdo->prepare('SELECT * FROM users WHERE email = ?'); $stmt->execute([trim($_POST['email'])]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -84,15 +98,20 @@ if ($action === 'register') {
 
 if ($action === 'logout') { session_destroy(); header("Location: login.php"); exit; }
 
+// --- Admin ---
 if ($action === 'add_book' && isAdmin()) {
+    $coverPath = handleFileUpload($_FILES['cover_file'] ?? null) ?? '';
     $stmt = $pdo->prepare('INSERT INTO books (title, author, category, description, cover, drive_link) VALUES (?, ?, ?, ?, ?, ?)');
-    $stmt->execute([trim($_POST['title']), trim($_POST['author']), trim($_POST['category']), trim($_POST['description']), trim($_POST['cover']), trim($_POST['drive_link'])]);
+    $stmt->execute([trim($_POST['title']), trim($_POST['author']), trim($_POST['category']), trim($_POST['description']), $coverPath, trim($_POST['drive_link'])]);
     $_SESSION['flash_success'] = "Book added."; header("Location: $returnUrl"); exit;
 }
 
 if ($action === 'edit_book' && isAdmin()) {
+    $coverPath = handleFileUpload($_FILES['cover_file'] ?? null);
+    if (!$coverPath) { $coverPath = $_POST['existing_cover'] ?? ''; } // Keep old cover if no new upload
+    
     $stmt = $pdo->prepare('UPDATE books SET title=?, author=?, category=?, description=?, cover=?, drive_link=? WHERE id=?');
-    $stmt->execute([trim($_POST['title']), trim($_POST['author']), trim($_POST['category']), trim($_POST['description']), trim($_POST['cover']), trim($_POST['drive_link']), (int)$_POST['book_id']]);
+    $stmt->execute([trim($_POST['title']), trim($_POST['author']), trim($_POST['category']), trim($_POST['description']), $coverPath, trim($_POST['drive_link']), (int)$_POST['book_id']]);
     $_SESSION['flash_success'] = "Book updated."; header("Location: $returnUrl"); exit;
 }
 
@@ -118,6 +137,7 @@ if ($action === 'delete_article' && isAdmin()) {
     $_SESSION['flash_success'] = "Article deleted."; header("Location: $returnUrl"); exit;
 }
 
+// --- Profile ---
 if ($action === 'update_profile' && $currentUser) {
     if (!empty($_POST['password'])) {
         $pdo->prepare('UPDATE users SET name = ?, email = ?, password = ? WHERE id = ?')->execute([trim($_POST['name']), trim($_POST['email']), password_hash($_POST['password'], PASSWORD_DEFAULT), $currentUser['id']]);
