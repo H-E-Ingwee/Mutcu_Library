@@ -7,8 +7,8 @@ $action = $_POST['action'] ?? $_GET['action'] ?? '';
 $returnUrl = $_POST['return_url'] ?? 'home.php';
 $currentUser = currentUser();
 
-// NEW: Allow 'export_csv' as a GET request
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' && !in_array($action, ['fetch_books', 'toggle_bookmark', 'export_csv'])) {
+// NEW: Allow 'export_csv' and 'fetch_related' as valid GET requests
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' && !in_array($action, ['fetch_books', 'toggle_bookmark', 'export_csv', 'fetch_related'])) {
     header('Location: index.php'); exit;
 }
 
@@ -71,6 +71,7 @@ if ($action === 'fetch_books') {
     try {
         $q = trim($_GET['q'] ?? '');
         $category = trim($_GET['category'] ?? 'All');
+        $sort = trim($_GET['sort'] ?? 'newest'); // NEW: Sort parameter
         $page = max(1, (int)($_GET['page'] ?? 1));
         $limit = 12; 
         $offset = ($page - 1) * $limit;
@@ -85,7 +86,16 @@ if ($action === 'fetch_books') {
         $countStmt->execute($params);
         $totalBooks = $countStmt->fetchColumn();
         
-        $sql .= ' ORDER BY id DESC LIMIT ' . (int)$limit . ' OFFSET ' . (int)$offset;
+        // NEW: Apply sorting logic
+        if ($sort === 'popular') {
+            $sql .= ' ORDER BY download_count DESC, id DESC';
+        } elseif ($sort === 'az') {
+            $sql .= ' ORDER BY title ASC';
+        } else {
+            $sql .= ' ORDER BY id DESC';
+        }
+        
+        $sql .= ' LIMIT ' . (int)$limit . ' OFFSET ' . (int)$offset;
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
@@ -94,6 +104,21 @@ if ($action === 'fetch_books') {
         
         echo json_encode(['books' => $books, 'hasMore' => ($offset + $limit) < $totalBooks]);
     } catch(PDOException $e) { echo json_encode(['books' => [], 'hasMore' => false]); }
+    exit;
+}
+
+// NEW: Endpoint to fetch 3 random related books for the Quick View modal
+if ($action === 'fetch_related') {
+    header('Content-Type: application/json');
+    try {
+        $id = (int)$_GET['id'];
+        $category = trim($_GET['category']);
+        $stmt = $pdo->prepare('SELECT * FROM books WHERE category = ? AND id != ? ORDER BY RAND() LIMIT 3');
+        $stmt->execute([$category, $id]);
+        $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        processBooks($books);
+        echo json_encode($books);
+    } catch(PDOException $e) { echo json_encode([]); }
     exit;
 }
 
@@ -255,6 +280,16 @@ if ($action === 'update_profile' && $currentUser) {
 if ($action === 'update_goal' && $currentUser) {
     $pdo->prepare('UPDATE users SET reading_goal = ? WHERE id = ?')->execute([(int)$_POST['goal'], $currentUser['id']]);
     $_SESSION['flash_success'] = "Reading goal updated!"; header("Location: profile.php"); exit;
+}
+
+// NEW: Endpoint to track Reading Status (To Read, Reading, Finished)
+if ($action === 'update_read_status' && $currentUser) {
+    header('Content-Type: application/json');
+    $book_id = (int)$_POST['book_id'];
+    $status = trim($_POST['status']);
+    $pdo->prepare('UPDATE user_bookmarks SET status = ? WHERE user_id = ? AND book_id = ?')->execute([$status, $currentUser['id'], $book_id]);
+    echo json_encode(['success' => true]);
+    exit;
 }
 
 header("Location: index.php");
