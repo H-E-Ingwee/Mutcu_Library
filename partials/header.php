@@ -4,6 +4,10 @@ if (!isset($currentUser)) {
 }
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
+
+<!-- GLOBAL CSRF TOKEN FOR SECURE FORMS & AJAX -->
+<input type="hidden" id="csrf_token_global" value="<?= csrf_token() ?>">
+
 <nav class="sticky top-0 z-50 bg-brand-900/95 backdrop-blur-md border-b border-white/10 transition-all duration-300">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-20">
