@@ -7,10 +7,11 @@ if (!$currentUser || !isAdmin()) {
 }
 $books = getBooks();
 $articles = getArticles();
-$users = getUsers(); // NEW: Fetch all users
+$users = getUsers(); // Fetches all users
 $stats = getStats();
 $categoryData = getCategoryDistribution();
 $weeklyData = getWeeklyInteractions();
+
 $eventsStmt = $pdo->query('SELECT event_type, target_type, COUNT(*) as count FROM events GROUP BY event_type, target_type');
 $events = $eventsStmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -29,11 +30,21 @@ $flash_success = $_SESSION['flash_success'] ?? null;
 $flash_error = $_SESSION['flash_error'] ?? null;
 unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 ?>
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>MUTCU E-Library | Admin</title><link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet"><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"><script src="https://cdn.tailwindcss.com"></script>
-<script>
-    tailwind.config = { theme: { extend: { fontFamily: { heading: ['Montserrat', 'sans-serif'], body: ['Lato', 'sans-serif'], }, colors: { brand: { 900: '#060B26', 800: '#0B133A', 50: '#F4F6FB', }, accent: { 500: '#FF9800', 600: '#E68A00', }, mutcu: { teal: '#2DD4BF', red: '#FF1A35' } } } } }
-</script>
-<style> h1, h2, h3, h4, h5, h6 { font-family: 'Montserrat', sans-serif; } </style></head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MUTCU E-Library | Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { heading: ['Montserrat', 'sans-serif'], body: ['Lato', 'sans-serif'], }, colors: { brand: { 900: '#060B26', 800: '#0B133A', 50: '#F4F6FB', }, accent: { 500: '#FF9800', 600: '#E68A00', }, mutcu: { teal: '#2DD4BF', red: '#FF1A35' } } } } }
+    </script>
+    <style> h1, h2, h3, h4, h5, h6 { font-family: 'Montserrat', sans-serif; } </style>
+</head>
 <body class="font-body bg-brand-50 flex flex-col min-h-screen text-slate-800">
     <?php include __DIR__.'/partials/header.php'; ?>
     
@@ -221,7 +232,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                     </div>
                 </div>
 
-                <!-- NEW: Manage Users Tab -->
+                <!-- Manage Users Tab -->
                 <div class="tab-pane fade" id="manage-users" role="tabpanel">
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -292,6 +303,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
     </main>
 
     <!-- Admin Modals -->
+    
     <!-- Add Book Modal -->
     <div class="modal fade" id="addBookModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-2xl border-0 shadow-2xl overflow-hidden"><div class="modal-header bg-brand-900 border-0 p-5"><h5 class="modal-title font-heading font-bold text-white"><i class="bi bi-journal-plus mr-2 text-accent-500"></i> Add New Book</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <form method="post" action="actions.php" enctype="multipart/form-data">
@@ -322,11 +334,55 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
         </form>
     </div></div></div>
 
-    <!-- Article Modals -->
-    <div class="modal fade" id="addArticleModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-2xl border-0 shadow-2xl overflow-hidden"><div class="modal-header bg-brand-900 p-5"><h5 class="modal-title font-heading font-bold text-white"><i class="bi bi-file-earmark-plus mr-2 text-accent-500"></i> Add Article</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><form method="post" action="actions.php"><div class="modal-body p-6 bg-brand-50 space-y-4"><input type="hidden" name="action" value="add_article"><input type="hidden" name="return_url" value="admin.php"><div><label class="block text-sm font-bold text-slate-700 mb-1">Title</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="title" required></div><div><label class="block text-sm font-bold text-slate-700 mb-1">Author</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="author" required></div><div><label class="block text-sm font-bold text-slate-700 mb-1">Link</label><input type="url" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="link" required></div><div><label class="block text-sm font-bold text-slate-700 mb-1">Abstract</label><textarea class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none h-24" name="abstract" required></textarea></div><div class="flex gap-4"><div class="flex-1"><label class="block text-sm font-bold text-slate-700 mb-1">Date</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="date" value="<?=date('M d, Y')?>" required></div><div class="flex-1"><label class="block text-sm font-bold text-slate-700 mb-1">Read Time</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="read_time" value="5 min read" required></div></div></div><div class="modal-footer bg-white p-4"><button type="button" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 border-0" data-bs-dismiss="modal">Cancel</button><button type="submit" class="px-5 py-2.5 bg-accent-500 text-white rounded-xl font-bold border-0">Save Article</button></div></form></div></div></div>
-    <div class="modal fade" id="editArticleModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-2xl border-0 shadow-2xl overflow-hidden"><div class="modal-header bg-brand-900 p-5"><h5 class="modal-title font-heading font-bold text-white"><i class="bi bi-pencil-square mr-2 text-accent-500"></i> Edit Article</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><form method="post" action="actions.php"><div class="modal-body p-6 bg-brand-50 space-y-4"><input type="hidden" name="action" value="edit_article"><input type="hidden" name="article_id" id="editArticleId"><input type="hidden" name="return_url" value="admin.php"><div><label class="block text-sm font-bold text-slate-700 mb-1">Title</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="title" id="editArticleTitle" required></div><div><label class="block text-sm font-bold text-slate-700 mb-1">Author</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="author" id="editArticleAuthor" required></div><div><label class="block text-sm font-bold text-slate-700 mb-1">Link</label><input type="url" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="link" id="editArticleLink" required></div><div><label class="block text-sm font-bold text-slate-700 mb-1">Abstract</label><textarea class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none h-24" name="abstract" id="editArticleAbstract" required></textarea></div><div class="flex gap-4"><div class="flex-1"><label class="block text-sm font-bold text-slate-700 mb-1">Date</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="date" id="editArticleDate" required></div><div class="flex-1"><label class="block text-sm font-bold text-slate-700 mb-1">Read Time</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="read_time" id="editArticleReadTime" required></div></div></div><div class="modal-footer bg-white p-4"><button type="button" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 border-0" data-bs-dismiss="modal">Cancel</button><button type="submit" class="px-5 py-2.5 bg-accent-500 text-white rounded-xl font-bold border-0">Update</button></div></form></div></div></div>
+    <!-- Add Article Modal (WITH AI BUTTON) -->
+    <div class="modal fade" id="addArticleModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-2xl border-0 shadow-2xl overflow-hidden"><div class="modal-header bg-brand-900 p-5"><h5 class="modal-title font-heading font-bold text-white"><i class="bi bi-file-earmark-plus mr-2 text-accent-500"></i> Add Article</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <form method="post" action="actions.php"><div class="modal-body p-6 bg-brand-50 space-y-4"><input type="hidden" name="action" value="add_article"><input type="hidden" name="return_url" value="admin.php">
+            <div><label class="block text-sm font-bold text-slate-700 mb-1">Title</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="title" required></div>
+            <div><label class="block text-sm font-bold text-slate-700 mb-1">Author</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="author" required></div>
+            
+            <!-- AI Auto Fill Section -->
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Link</label>
+                <div class="flex gap-2">
+                    <input type="url" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="link" id="addArticleLinkInput" required>
+                    <button type="button" onclick="generateAbstract('addArticleLinkInput', 'addArticleAbstractInput')" class="bg-brand-900 hover:bg-brand-800 text-white px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors shadow-sm">
+                        <i class="bi bi-magic mr-1"></i> Auto-Fill
+                    </button>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Abstract Summary</label>
+                <textarea class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none h-24" name="abstract" id="addArticleAbstractInput" required></textarea>
+            </div>
+            <!-- End AI Section -->
 
-    <!-- NEW: Edit User Modal -->
+            <div class="flex gap-4"><div class="flex-1"><label class="block text-sm font-bold text-slate-700 mb-1">Date</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="date" value="<?=date('M d, Y')?>" required></div><div class="flex-1"><label class="block text-sm font-bold text-slate-700 mb-1">Read Time</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="read_time" value="5 min read" required></div></div></div><div class="modal-footer bg-white p-4"><button type="button" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 border-0" data-bs-dismiss="modal">Cancel</button><button type="submit" class="px-5 py-2.5 bg-accent-500 text-white rounded-xl font-bold border-0">Save Article</button></div></form></div></div></div>
+    
+    <!-- Edit Article Modal (WITH AI BUTTON) -->
+    <div class="modal fade" id="editArticleModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-2xl border-0 shadow-2xl overflow-hidden"><div class="modal-header bg-brand-900 p-5"><h5 class="modal-title font-heading font-bold text-white"><i class="bi bi-pencil-square mr-2 text-accent-500"></i> Edit Article</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <form method="post" action="actions.php"><div class="modal-body p-6 bg-brand-50 space-y-4"><input type="hidden" name="action" value="edit_article"><input type="hidden" name="article_id" id="editArticleId"><input type="hidden" name="return_url" value="admin.php">
+            <div><label class="block text-sm font-bold text-slate-700 mb-1">Title</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="title" id="editArticleTitle" required></div>
+            <div><label class="block text-sm font-bold text-slate-700 mb-1">Author</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="author" id="editArticleAuthor" required></div>
+            
+            <!-- AI Auto Fill Section -->
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Link</label>
+                <div class="flex gap-2">
+                    <input type="url" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="link" id="editArticleLink" required>
+                    <button type="button" onclick="generateAbstract('editArticleLink', 'editArticleAbstract')" class="bg-brand-900 hover:bg-brand-800 text-white px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors shadow-sm">
+                        <i class="bi bi-magic mr-1"></i> Auto-Fill
+                    </button>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Abstract Summary</label>
+                <textarea class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none h-24" name="abstract" id="editArticleAbstract" required></textarea>
+            </div>
+            <!-- End AI Section -->
+
+            <div class="flex gap-4"><div class="flex-1"><label class="block text-sm font-bold text-slate-700 mb-1">Date</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="date" id="editArticleDate" required></div><div class="flex-1"><label class="block text-sm font-bold text-slate-700 mb-1">Read Time</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="read_time" id="editArticleReadTime" required></div></div></div><div class="modal-footer bg-white p-4"><button type="button" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 border-0" data-bs-dismiss="modal">Cancel</button><button type="submit" class="px-5 py-2.5 bg-accent-500 text-white rounded-xl font-bold border-0">Update</button></div></form></div></div></div>
+
+    <!-- Edit User Modal -->
     <div class="modal fade" id="editUserModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-2xl border-0 shadow-2xl overflow-hidden"><div class="modal-header bg-brand-900 border-0 p-5"><h5 class="modal-title font-heading font-bold text-white"><i class="bi bi-person-gear mr-2 text-accent-500"></i> Manage User Account</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <form method="post" action="actions.php">
             <div class="modal-body p-6 bg-brand-50 space-y-4"><input type="hidden" name="action" value="edit_user"><input type="hidden" name="user_id" id="editUserId"><input type="hidden" name="return_url" value="admin.php">
@@ -349,10 +405,12 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
     </div></div></div>
 
     <?php include __DIR__.'/partials/footer.php'; ?>
+    
+    <!-- Required Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script> const MUTCU = { user: <?=json_encode($currentUser)?>, books: <?=json_encode($books)?>, articles: <?=json_encode($articles)?>, stats: <?=json_encode($stats)?> };</script>
     <script src="assets/js/app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -364,9 +422,9 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                 const categoryLabels = categoryData.map(item => item.category);
                 const categoryCounts = categoryData.map(item => parseInt(item.count));
 
+                // Chart 1: Uses dynamic labels
                 new Chart(ctx1, {
                     type: 'line',
-                    // FIX: Connect the real dynamically generated labels from the database
                     data: { labels: weeklyData.labels, datasets: [{ label: 'Interactions', data: weeklyData.data, borderColor: '#FF9800', backgroundColor: 'rgba(255, 152, 0, 0.1)', fill: true, tension: 0.4, borderWidth: 3, pointBackgroundColor: '#060B26' }] },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
                 });
@@ -379,7 +437,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
             }
         });
 
-        // Search Filters for Admin Tables
+        // Search Filters
         document.getElementById('searchBooksAdmin')?.addEventListener('input', function() {
             const query = this.value.toLowerCase();
             document.querySelectorAll('#booksTable tbody tr').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none'; });
@@ -423,7 +481,6 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
             const roleSelect = document.getElementById('editUserRole');
             roleSelect.value = role;
             
-            // Lock role dropdown for Super Admins
             if (isSuperAdmin) {
                 roleSelect.setAttribute('disabled', 'disabled');
                 let hiddenRole = document.getElementById('hiddenEditUserRole');
@@ -439,6 +496,38 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                 roleSelect.removeAttribute('disabled');
                 const hiddenRole = document.getElementById('hiddenEditUserRole');
                 if (hiddenRole) hiddenRole.remove();
+            }
+        }
+
+        // --- AI Auto-Abstract Fetcher ---
+        async function generateAbstract(linkInputId, abstractFieldId) {
+            const linkUrl = document.getElementById(linkInputId).value;
+            const abstractField = document.getElementById(abstractFieldId);
+            
+            if (!linkUrl) {
+                alert('Please paste an article URL in the link box first!');
+                return;
+            }
+            
+            abstractField.value = "🤖 AI is reading the article and generating a summary. Please wait...";
+            
+            try {
+                const formData = new FormData();
+                formData.append('action', 'generate_abstract');
+                formData.append('link', linkUrl);
+                formData.append('csrf_token', document.getElementById('csrf_token_global').value);
+                
+                const response = await fetch('actions.php', { method: 'POST', body: formData });
+                const data = await response.json();
+                
+                if (data.error) {
+                    abstractField.value = data.error;
+                } else {
+                    abstractField.value = data.abstract;
+                }
+            } catch (error) {
+                console.error("AI Generation failed:", error);
+                abstractField.value = "Error connecting to AI server.";
             }
         }
     </script>
