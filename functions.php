@@ -4,6 +4,33 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 require_once __DIR__ . '/db.php';
 
+// --- DATABASE AUTO-FIXER ---
+// Automatically creates missing tables so profile.php and bookmarks don't crash
+try {
+    global $pdo;
+    $pdo->exec("CREATE TABLE IF NOT EXISTS user_bookmarks (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        book_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_bookmark (user_id, book_id)
+    )");
+    
+    $pdo->exec("CREATE TABLE IF NOT EXISTS events (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NULL,
+        event_type VARCHAR(50) NOT NULL,
+        target_type VARCHAR(50) NOT NULL,
+        target_id INT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+    
+    // Add reading_goal column if it doesn't exist
+    $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS reading_goal INT DEFAULT 0");
+} catch (PDOException $e) {
+    // Continue silently if tables/columns already exist or permissions are restricted
+}
+
 function currentUser() {
     global $pdo;
     if (!isset($_SESSION['user_id'])) return null;
@@ -17,7 +44,7 @@ function isAdmin() {
     return $user && $user['role'] === 'admin';
 }
 
-// FIX: Generate beautiful Unsplash covers based on category if missing
+// Generate high-quality Unsplash covers based on category if a book is missing a cover
 function getSymbolicCover($category, $title) {
     $coverBanks = [
         'Faith' => [
@@ -42,23 +69,28 @@ function getSymbolicCover($category, $title) {
         ]
     ];
 
-    $hash = crc32($title);
+    $hash = crc32($title ?: 'default');
     $categoryArray = $coverBanks[$category] ?? $coverBanks['Faith'];
-    $index = $hash % count($categoryArray);
+    $index = abs($hash) % count($categoryArray);
     
     return $categoryArray[$index];
+}
+
+function processBooks(&$books) {
+    foreach ($books as &$book) {
+        $cover = trim($book['cover'] ?? '');
+        if (empty($cover) || strlen($cover) < 10 || !filter_var($cover, FILTER_VALIDATE_URL)) {
+            $book['cover'] = getSymbolicCover($book['category'], $book['title']);
+        }
+    }
+    unset($book);
 }
 
 function getBooks() {
     global $pdo;
     $stmt = $pdo->query('SELECT * FROM books ORDER BY id DESC');
     $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    foreach ($books as &$book) {
-        if (empty($book['cover']) || !filter_var($book['cover'], FILTER_VALIDATE_URL)) {
-            $book['cover'] = getSymbolicCover($book['category'], $book['title']);
-        }
-    }
+    processBooks($books);
     return $books;
 }
 
@@ -78,12 +110,7 @@ function getUserBookmarks($userId) {
     $stmt = $pdo->prepare('SELECT b.* FROM books b JOIN user_bookmarks ub ON b.id = ub.book_id WHERE ub.user_id = ? ORDER BY ub.created_at DESC');
     $stmt->execute([$userId]);
     $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    foreach ($books as &$book) {
-        if (empty($book['cover']) || !filter_var($book['cover'], FILTER_VALIDATE_URL)) {
-            $book['cover'] = getSymbolicCover($book['category'], $book['title']);
-        }
-    }
+    processBooks($books);
     return $books;
 }
 
@@ -98,23 +125,18 @@ function getUserReadingHistory($userId) {
     ');
     $stmt->execute([$userId]);
     $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    foreach ($books as &$book) {
-        if (empty($book['cover']) || !filter_var($book['cover'], FILTER_VALIDATE_URL)) {
-            $book['cover'] = getSymbolicCover($book['category'], $book['title']);
-        }
-    }
+    processBooks($books);
     return $books;
 }
 
 function getStats() {
     global $pdo;
-    $stats = [];
-    $stats['total_books'] = $pdo->query('SELECT COUNT(*) FROM books')->fetchColumn();
-    $stats['total_articles'] = $pdo->query('SELECT COUNT(*) FROM articles')->fetchColumn();
-    $stats['total_users'] = $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
-    $stats['total_downloads'] = $pdo->query('SELECT COUNT(*) FROM events WHERE event_type = "download"')->fetchColumn();
-    return $stats;
+    return [
+        'total_books' => $pdo->query('SELECT COUNT(*) FROM books')->fetchColumn(),
+        'total_articles' => $pdo->query('SELECT COUNT(*) FROM articles')->fetchColumn(),
+        'total_users' => $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn(),
+        'total_downloads' => $pdo->query('SELECT COUNT(*) FROM events WHERE event_type = "download"')->fetchColumn()
+    ];
 }
 
 function getCategoryDistribution() {
