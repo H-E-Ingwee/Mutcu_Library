@@ -1,35 +1,32 @@
 document.addEventListener('DOMContentLoaded', () => {
     
-    // 1. Library Filters
+    // Set up filter buttons
     const filterBtns = document.querySelectorAll('.ajax-filter');
     if (filterBtns.length > 0) {
         filterBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
-                
-                // Clear active states
                 filterBtns.forEach(b => {
                     b.classList.remove('bg-brand-900', 'text-white', 'border-brand-900', 'shadow-md');
                     b.classList.add('bg-white', 'text-brand-900', 'border-slate-200');
                 });
-                
-                // Set clicked state
                 btn.classList.remove('bg-white', 'text-brand-900', 'border-slate-200');
                 btn.classList.add('bg-brand-900', 'text-white', 'border-brand-900', 'shadow-md');
                 
-                // Update URL quietly
                 const category = btn.getAttribute('data-category');
                 const url = new URL(window.location);
                 url.searchParams.set('category', category);
                 url.searchParams.delete('q'); 
                 window.history.pushState({}, '', url);
 
-                fetchFilteredBooks();
+                // Fetch new filter starting at page 1
+                currentPage = 1;
+                fetchFilteredBooks(true);
             });
         });
     }
 
-    // 2. Search Form
+    // Set up search form
     const searchForm = document.getElementById('searchForm');
     if (searchForm) {
         searchForm.addEventListener('submit', (e) => {
@@ -38,13 +35,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const url = new URL(window.location);
             url.searchParams.set('q', q);
             window.history.pushState({}, '', url);
-            fetchFilteredBooks();
+            // Fetch new search starting at page 1
+            currentPage = 1;
+            fetchFilteredBooks(true);
+        });
+    }
+
+    // Set up Load More Button
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', () => {
+            currentPage++;
+            fetchFilteredBooks(false); // false means append, don't clear
         });
     }
 });
 
+// State for pagination
+let currentPage = 1;
+
 // Fetch books based on current parameters
-async function fetchFilteredBooks() {
+async function fetchFilteredBooks(reset = true) {
     const searchInput = document.getElementById('searchInput');
     const q = searchInput ? searchInput.value.trim() : '';
     const activeFilter = document.querySelector('.ajax-filter.bg-brand-900');
@@ -52,14 +63,24 @@ async function fetchFilteredBooks() {
 
     const loader = document.getElementById('grid-loader');
     const grid = document.getElementById('book-grid');
-    if(loader) loader.classList.remove('hidden');
-    if(grid) grid.innerHTML = '';
+    const loadMoreContainer = document.getElementById('load-more-container');
+    const loadMoreBtn = document.getElementById('load-more-btn');
+
+    if (reset) {
+        if(loader) loader.classList.remove('hidden');
+        if(grid) grid.innerHTML = '';
+        if(loadMoreContainer) loadMoreContainer.classList.add('hidden');
+    } else {
+        // Show mini loading state in the button
+        if(loadMoreBtn) loadMoreBtn.innerHTML = '<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span> Loading...';
+    }
 
     try {
-        const response = await fetch(`actions.php?action=fetch_books&q=${encodeURIComponent(q)}&category=${encodeURIComponent(category)}`);
-        const books = await response.json();
+        const response = await fetch(`actions.php?action=fetch_books&q=${encodeURIComponent(q)}&category=${encodeURIComponent(category)}&page=${currentPage}`);
+        const data = await response.json();
+        const books = data.books || [];
 
-        if (books.length === 0) {
+        if (reset && books.length === 0) {
              grid.innerHTML = `
                 <div class="col-span-full text-center py-16 bg-white rounded-2xl border border-slate-200">
                     <i class="bi bi-journal-x text-slate-300 text-6xl mb-4 block"></i>
@@ -69,7 +90,7 @@ async function fetchFilteredBooks() {
         } else {
             books.forEach(book => {
                 const cardHtml = `
-                    <div class="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group" 
+                    <div class="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group animate-in fade-in zoom-in duration-500" 
                          onclick="openQuickView(this)" 
                          data-book-id="${book.id}" data-title="${book.title.replace(/"/g, '&quot;')}" data-author="${book.author.replace(/"/g, '&quot;')}" data-description="${book.description.replace(/"/g, '&quot;')}" data-cover="${book.cover}" data-category="${book.category}" data-drive-link="${book.drive_link}">
                         
@@ -99,6 +120,15 @@ async function fetchFilteredBooks() {
                 grid.insertAdjacentHTML('beforeend', cardHtml);
             });
         }
+
+        // Toggle "Load More" button visibility
+        if (data.hasMore) {
+            loadMoreContainer.classList.remove('hidden');
+            if(loadMoreBtn) loadMoreBtn.innerHTML = 'Load More Books <i class="bi bi-arrow-down-short ml-1"></i>';
+        } else {
+            if(loadMoreContainer) loadMoreContainer.classList.add('hidden');
+        }
+
     } catch (error) {
         console.error('Fetch error:', error);
     } finally {
