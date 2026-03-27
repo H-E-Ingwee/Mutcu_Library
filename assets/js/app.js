@@ -1,197 +1,152 @@
-// app.js - Shared client logic for MUTCU E-Library
-
-function performSearch(inputId) {
-    const value = document.getElementById(inputId)?.value.trim() || '';
-    const params = new URLSearchParams({ q: value, category: 'All' });
-    window.location.href = 'library.php?' + params.toString();
-}
-
-function goToCategory(category) {
-    const params = new URLSearchParams({ category });
-    window.location.href = 'library.php?' + params.toString();
-}
-
-function showToast(message, type = 'success') {
-    const toastEl = document.getElementById('flashToast');
-    const toastBody = document.getElementById('toastMessage');
-    toastBody.textContent = message;
-    toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
-    const toast = new bootstrap.Toast(toastEl);
-    toast.show();
-}
-
-async function toggleBookmark(bookId, buttonElement) {
-    try {
-        const formData = new FormData();
-        formData.append('action', 'toggle_bookmark');
-        formData.append('book_id', bookId);
-
-        const response = await fetch('actions.php', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
-
-        const result = await response.json();
-        if (result.status === 'success') {
-            const icon = buttonElement.querySelector('i');
-            if (result.bookmarked) {
-                icon.classList.remove('bi-bookmark');
-                icon.classList.add('bi-bookmark-fill');
-                buttonElement.classList.remove('btn-outline-secondary');
-                buttonElement.classList.add('btn-secondary');
-                showToast('Book saved to your library!', 'success');
-            } else {
-                icon.classList.remove('bi-bookmark-fill');
-                icon.classList.add('bi-bookmark');
-                buttonElement.classList.remove('btn-secondary');
-                buttonElement.classList.add('btn-outline-secondary');
-                showToast('Book removed from your library.', 'info');
-            }
-        } else {
-            showToast('Error updating bookmark.', 'danger');
-        }
-    } catch (error) {
-        console.error('Bookmark error:', error);
-        showToast('Error updating bookmark.', 'danger');
+// Global search function accessible from Home
+window.performSearch = function(inputId) {
+    const input = document.getElementById(inputId);
+    if (input && input.value.trim() !== '') {
+        window.location.href = `library.php?q=${encodeURIComponent(input.value.trim())}`;
     }
-}
+};
 
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // --- Fix: Book Filter Clicks using Tailwind Classes ---
+    const filterBtns = document.querySelectorAll('.ajax-filter');
+    if (filterBtns.length > 0) {
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                // Reset styling for all buttons
+                filterBtns.forEach(b => {
+                    b.classList.remove('bg-brand-900', 'text-white', 'border-brand-900', 'shadow-md');
+                    b.classList.add('bg-white', 'text-brand-900', 'border-slate-200');
+                });
+                
+                // Apply active styling to the clicked button
+                btn.classList.remove('bg-white', 'text-brand-900', 'border-slate-200');
+                btn.classList.add('bg-brand-900', 'text-white', 'border-brand-900', 'shadow-md');
+                
+                // Update URL parameters without reloading page
+                const category = btn.getAttribute('data-category');
+                const url = new URL(window.location);
+                url.searchParams.set('category', category);
+                url.searchParams.delete('q'); // Clear text search if category is clicked
+                window.history.pushState({}, '', url);
+
+                // Fetch new data
+                fetchFilteredBooks();
+            });
+        });
+    }
+
+    // Attach text search form listener in Library
+    const searchForm = document.getElementById('searchForm');
+    if (searchForm) {
+        searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const q = document.getElementById('searchInput').value.trim();
+            const url = new URL(window.location);
+            url.searchParams.set('q', q);
+            window.history.pushState({}, '', url);
+            fetchFilteredBooks();
+        });
+    }
+});
+
+// Fetches books dynamically on the Library page
 async function fetchFilteredBooks() {
-    const q = document.getElementById('searchInput').value.trim();
-    const activeFilter = document.querySelector('.ajax-filter.active');
+    const q = document.getElementById('searchInput') ? document.getElementById('searchInput').value.trim() : '';
+    // Find the currently active tailwind filter
+    const activeFilter = document.querySelector('.ajax-filter.bg-brand-900');
     const category = activeFilter ? activeFilter.getAttribute('data-category') : 'All';
 
     const loader = document.getElementById('grid-loader');
     const grid = document.getElementById('book-grid');
-    loader.classList.remove('d-none');
-    grid.innerHTML = '';
+    if(loader) loader.classList.remove('hidden');
+    if(grid) grid.innerHTML = '';
 
     try {
         const response = await fetch(`actions.php?action=fetch_books&q=${encodeURIComponent(q)}&category=${encodeURIComponent(category)}`);
         const books = await response.json();
 
-        books.forEach(book => {
-            const cardHtml = `
-                <div class="col-md-4 col-lg-3 col-sm-6">
-                    <div class="card book-card" onclick="openQuickView(this)" data-book-id="${book.id}" data-title="${book.title.replace(/"/g, '&quot;')}" data-author="${book.author.replace(/"/g, '&quot;')}" data-description="${book.description.replace(/"/g, '&quot;')}" data-cover="${book.cover}" data-category="${book.category}" data-drive-link="${book.drive_link}" style="cursor: pointer;">
-                        <div class="book-cover-container">
-                            <span class="category-badge">${book.category}</span>
-                            <img src="${book.cover}" class="book-cover" alt="${book.title}">
+        if (books.length === 0) {
+             grid.innerHTML = `
+                <div class="col-span-full text-center py-16 bg-white rounded-2xl border border-slate-200">
+                    <i class="bi bi-journal-x text-slate-300 text-6xl mb-4 block"></i>
+                    <h3 class="font-extrabold font-heading text-2xl text-brand-900 mb-2">No books found</h3>
+                    <p class="text-slate-500">Try adjusting your search keywords or filter criteria.</p>
+                </div>`;
+        } else {
+            books.forEach(book => {
+                const cardHtml = `
+                    <div class="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group" 
+                         onclick="openQuickView(this)" 
+                         data-book-id="${book.id}" data-title="${book.title.replace(/"/g, '&quot;')}" data-author="${book.author.replace(/"/g, '&quot;')}" data-description="${book.description.replace(/"/g, '&quot;')}" data-cover="${book.cover}" data-category="${book.category}" data-drive-link="${book.drive_link}">
+                        
+                        <div class="relative pt-[130%] bg-slate-100 overflow-hidden">
+                            <span class="absolute top-3 right-3 z-10 bg-brand-900/80 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                                ${book.category}
+                            </span>
+                            <img src="${book.cover}" alt="Cover" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                         </div>
-                        <div class="card-body d-flex flex-column p-4">
-                            <h5 class="card-title fw-bold mb-1" style="font-family:var(--heading-font);color:var(--primary-color);">${book.title}</h5>
-                            <p class="text-muted small mb-3 border-bottom pb-2">By ${book.author}</p>
-                            <p class="card-text small flex-grow-1 text-secondary mb-4">${book.description}</p>
-                            <div class="d-flex gap-2 mb-3">
-                                <button onclick="event.stopPropagation(); toggleBookmark(${book.id}, this)" class="btn btn-outline-secondary w-100 rounded-pill fw-bold">
-                                    <i class="bi bi-bookmark me-1"></i> Bookmark
+                        
+                        <div class="p-5 flex flex-col flex-grow">
+                            <h4 class="font-bold font-heading text-lg text-brand-900 mb-1 truncate">${book.title}</h4>
+                            <p class="text-sm text-slate-500 mb-3 pb-3 border-b border-slate-100">By ${book.author}</p>
+                            <p class="text-sm text-slate-600 flex-grow mb-4 line-clamp-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${book.description}</p>
+                            
+                            <div class="flex gap-2 mt-auto">
+                                <button onclick="event.stopPropagation(); toggleBookmark(${book.id}, this)" class="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors bg-white">
+                                    <i class="bi bi-bookmark"></i>
                                 </button>
+                                <a href="download.php?id=${book.id}" target="_blank" onclick="event.stopPropagation();" class="flex-grow flex items-center justify-center bg-brand-900 hover:bg-brand-800 text-white rounded-xl font-semibold text-sm transition-colors text-decoration-none">
+                                    <i class="bi bi-cloud-arrow-down mr-2"></i> Access
+                                </a>
                             </div>
-                            <a href="download.php?id=${book.id}" target="_blank" class="btn btn-outline-primary w-100 mt-auto rounded-pill fw-bold" style="border-color: var(--primary-color); color: var(--primary-color);">
-                                <i class="bi bi-cloud-arrow-down me-1"></i> Access Book
-                            </a>
                         </div>
                     </div>
-                </div>
-            `;
-            grid.insertAdjacentHTML('beforeend', cardHtml);
-        });
+                `;
+                grid.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
     } catch (error) {
         console.error('Fetch error:', error);
-        grid.innerHTML = '<div class="col-12 text-center py-5"><i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i><h3 class="fw-bold text-danger">Error loading books</h3><p class="text-muted">Please try again later.</p></div>';
     } finally {
-        loader.classList.add('d-none');
+        if(loader) loader.classList.add('hidden');
     }
 }
 
-function openQuickView(buttonElement) {
-    const bookId = buttonElement.getAttribute('data-book-id');
-    const title = buttonElement.getAttribute('data-title');
-    const author = buttonElement.getAttribute('data-author');
-    const description = buttonElement.getAttribute('data-description');
-    const cover = buttonElement.getAttribute('data-cover');
-    const category = buttonElement.getAttribute('data-category');
-    const driveLink = buttonElement.getAttribute('data-drive-link');
+// Global functions for Quick View Modals
+window.openQuickView = function(el) {
+    document.getElementById('quickViewBookId').value = el.getAttribute('data-book-id');
+    document.getElementById('quickViewTitle').textContent = el.getAttribute('data-title');
+    document.getElementById('quickViewAuthor').textContent = el.getAttribute('data-author');
+    document.getElementById('quickViewCategory').textContent = el.getAttribute('data-category');
+    document.getElementById('quickViewDescription').textContent = el.getAttribute('data-description');
+    document.getElementById('quickViewCover').src = el.getAttribute('data-cover');
+    document.getElementById('quickViewDownloadBtn').href = 'download.php?id=' + el.getAttribute('data-book-id');
 
-    document.getElementById('quickViewBookId').value = bookId;
-    document.getElementById('quickViewTitle').textContent = title;
-    document.getElementById('quickViewAuthor').textContent = author;
-    document.getElementById('quickViewDescription').textContent = description;
-    document.getElementById('quickViewCover').src = cover;
-    document.getElementById('quickViewCategory').textContent = category;
-    document.getElementById('quickViewDownloadBtn').href = driveLink;
-
-    // Update bookmark button state if needed (could check if bookmarked)
-    const modal = new bootstrap.Modal(document.getElementById('quickViewModal'));
+    let modal = new bootstrap.Modal(document.getElementById('quickViewModal'));
     modal.show();
-}
+};
 
-window.addEventListener('DOMContentLoaded', () => {
-    const path = window.location.pathname.split('/').pop();
-    const activeItem = document.querySelector('.navbar-nav .nav-link[href="' + path + '"]');
-    if (activeItem) activeItem.classList.add('active');
-
-    // Theme toggle
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) {
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') {
-            document.documentElement.setAttribute('data-bs-theme', 'dark');
-            themeToggle.innerHTML = '<i class="bi bi-brightness-high"></i>';
+window.toggleBookmark = async function(bookId, btnElement) {
+    if (!MUTCU.user) {
+        window.location.href = 'login.php';
+        return;
+    }
+    try {
+        const response = await fetch(`actions.php?action=toggle_bookmark&book_id=${bookId}`);
+        const result = await response.json();
+        
+        const icon = btnElement.querySelector('i');
+        if (result.status === 'added') {
+            icon.classList.remove('bi-bookmark');
+            icon.classList.add('bi-bookmark-fill', 'text-accent-500');
         } else {
-            document.documentElement.setAttribute('data-bs-theme', 'light');
-            themeToggle.innerHTML = '<i class="bi bi-moon-stars"></i>';
+            icon.classList.remove('bi-bookmark-fill', 'text-accent-500');
+            icon.classList.add('bi-bookmark');
         }
-
-        themeToggle.addEventListener('click', () => {
-            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-bs-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            themeToggle.innerHTML = newTheme === 'dark' ? '<i class="bi bi-brightness-high"></i>' : '<i class="bi bi-moon-stars"></i>';
-        });
+    } catch (error) {
+        console.error('Bookmark toggle failed', error);
     }
-
-    // Page-specific enhancements
-    if (path === 'library.php') {
-        // Prevent search form submission
-        const searchForm = document.getElementById('searchForm');
-        if (searchForm) {
-            searchForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                fetchFilteredBooks();
-            });
-        }
-
-        // Debounced search input
-        let searchTimeout;
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput) {
-            searchInput.addEventListener('input', () => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(fetchFilteredBooks, 300);
-            });
-        }
-
-        // Filter buttons
-        document.querySelectorAll('.ajax-filter').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                document.querySelectorAll('.ajax-filter').forEach(b => {
-                    b.classList.remove('bg-brand-900', 'text-white', 'border-brand-900', 'shadow-md');
-                    b.classList.add('bg-white', 'text-brand-900', 'border-slate-200');
-                });
-                btn.classList.remove('bg-white', 'text-brand-900', 'border-slate-200');
-                btn.classList.add('bg-brand-900', 'text-white', 'border-brand-900', 'shadow-md');
-                fetchFilteredBooks();
-            });
-        });
-    }
-
-    if (path === 'home.php' && window.MUTCU && window.MUTCU.articles) {
-        // Already rendered server-side
-    }
-});
+};
