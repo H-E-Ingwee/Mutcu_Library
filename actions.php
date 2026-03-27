@@ -7,6 +7,11 @@ $action = $_POST['action'] ?? $_GET['action'] ?? '';
 $returnUrl = $_POST['return_url'] ?? 'home.php';
 $currentUser = currentUser();
 
+// --- ENFORCE CSRF SECURITY ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
+}
+
 // NEW: Allow 'export_csv' and 'fetch_related' as valid GET requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' && !in_array($action, ['fetch_books', 'toggle_bookmark', 'export_csv', 'fetch_related'])) {
     header('Location: index.php'); exit;
