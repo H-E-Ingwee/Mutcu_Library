@@ -46,13 +46,12 @@
                         </a>
                     </li>
                     <li class="flex items-start text-slate-400"><i class="bi bi-hdd-network mr-3 text-lg"></i> Hosted via G-Drive</li>
-                    <li class="flex items-start text-slate-400"><i class="bi bi-code-square mr-3 text-lg"></i> v3.0 Tailwind Release</li>
                 </ul>
             </div>
         </div>
         
         <div class="border-t border-slate-800 mt-16 pt-8 text-center text-sm font-medium flex flex-col md:flex-row justify-between items-center">
-            <span>&copy; <?= date('Y') ?> MUTCU E-Library System. Proposed & Built by Brian Ingwee.</span>
+            <span>&copy; <?= date('Y') ?> MUTCU E-Library System. All rights reserved.</span>
             <span class="mt-2 md:mt-0 text-slate-500">For Educational & Internal Use Only.</span>
         </div>
     </div>

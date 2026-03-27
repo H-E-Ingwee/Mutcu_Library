@@ -1,82 +1,32 @@
 <?php
-// db.php - MySQL connection.
-$host = 'localhost';
-$dbname = 'mutcu_library';
-$username = 'root';
-$password = '';
+// ==========================================
+// HOSTINGER DATABASE CONFIGURATION
+// ==========================================
+
+// Hostinger Account Prefix: u887119320_
+$host = 'localhost'; // Usually 'localhost'. If it fails, check hPanel for 'MySQL Host'
+$dbname = 'u887119320_mutcu_library'; // Exact Hostinger DB Name
+$username = 'u887119320_MutcuSec'; // Exact Hostinger DB User
+$password = 'MutcuSec@2026';
 
 try {
-    // Create database if not exists
-    $tempPdo = new PDO("mysql:host=$host;charset=utf8", $username, $password);
-    $tempPdo->exec("CREATE DATABASE IF NOT EXISTS `$dbname`");
-    $tempPdo = null;
-
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
+    // Create the PDO connection with UTF-8 encoding
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
+    
+    // Set PDO to throw exceptions on error
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    // Disable emulated prepares for better security against SQL injection
+    $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 
-    // Create tables
-    $pdo->exec("CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL,
-        role VARCHAR(50) NOT NULL DEFAULT 'member',
-        reading_goal INT DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );");
-
-    $pdo->exec("CREATE TABLE IF NOT EXISTS books (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        author VARCHAR(255) NOT NULL,
-        category VARCHAR(100) NOT NULL,
-        description TEXT,
-        cover VARCHAR(500),
-        drive_link VARCHAR(500) NOT NULL,
-        added_by INT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        download_count INT DEFAULT 0,
-        view_count INT DEFAULT 0
-    );");
-
-    $pdo->exec("CREATE TABLE IF NOT EXISTS articles (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        author VARCHAR(255) NOT NULL,
-        abstract TEXT,
-        link VARCHAR(500) NOT NULL,
-        date VARCHAR(50),
-        read_time VARCHAR(50),
-        added_by INT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        view_count INT DEFAULT 0
-    );");
-
-    $pdo->exec("CREATE TABLE IF NOT EXISTS events (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT,
-        event_type VARCHAR(50),
-        target_type VARCHAR(50),
-        target_id INT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );");
-
-    $pdo->exec("CREATE TABLE IF NOT EXISTS bookmarks (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT,
-        book_id INT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
-    );");
-
-    // Seed admin if not exists
-    $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ?');
-    $stmt->execute(['admin@mutcu.local']);
-    if (!$stmt->fetch()) {
-        $pdo->exec("INSERT INTO users (name,email,password,role) VALUES ('Admin','admin@mutcu.local','" . password_hash('mutcu123', PASSWORD_DEFAULT) . "','admin');");
-    }
-
-} catch (Exception $e) {
-    exit('Database error: ' . htmlspecialchars($e->getMessage()));
+} catch (PDOException $e) {
+    // In production, we log the error silently instead of showing it to the user for security reasons
+    error_log("Database Connection Error: " . $e->getMessage());
+    
+    // TEMPORARY DEBUGGING FIX: 
+    // This will print the exact MySQL error on your screen so you know exactly what is wrong.
+    die("<h3>Database Connection Failed!</h3>
+         <p><strong>Exact Error:</strong> " . htmlspecialchars($e->getMessage()) . "</p>
+         <p><em>Hint: If it says 'Access Denied', double check the password. If it says 'Connection Refused', change \$host in db.php from 'localhost' to the exact MySQL Host IP shown in hPanel.</em></p>");
 }
+?>

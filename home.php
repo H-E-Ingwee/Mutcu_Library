@@ -44,27 +44,27 @@ $stats = getStats();
             <div class="relative z-10 max-w-4xl mx-auto px-4 text-center">
                 <?php if ($currentUser): ?>
                     <span class="inline-block mb-4 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-white font-semibold text-sm backdrop-blur-sm animate-fade-in-down">
-                        Welcome back, <span class="text-accent-500"><?=htmlspecialchars($currentUser['name'])?></span>! 👋
+                        Welcome home, <span class="text-accent-500"><?=htmlspecialchars($currentUser['name'])?></span>. Your next step of growth begins here. 👋
                     </span>
                 <?php else: ?>
                     <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold bg-accent-500/10 text-accent-500 border border-accent-500/20 mb-6 backdrop-blur-sm">
                         <span class="relative flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-500 opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent-500"></span></span>
-                        Official Digital Platform
+                        A Shared library for the MUTCU Family
                     </span>
                 <?php endif; ?>
                 
                 <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold font-heading tracking-tight mb-6 leading-tight">
-                    Equipping Leaders,<br/>
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-accent-500 to-yellow-400">Deepening Faith</span>
+                    Growing in Grace,<br/>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-accent-500 to-yellow-400">Leading with Purpose</span>
                 </h1>
                 
                 <p class="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
-                    Access curated, Christ-centered educational resources, books, and insights from leading authors to foster your spiritual, academic, and leadership growth.
+                    This library is our gift to you—a well selected collection of Christ-centered wisdom designed to nourish your spirit, sharpen your mind, and prepare you for the unique calling God has for your life.
                 </p>
                 
                 <form action="library.php" method="GET" class="max-w-2xl mx-auto relative group">
                     <div class="relative flex items-center shadow-2xl hover:shadow-accent-500/10 transition-shadow duration-500 rounded-full">
-                        <input type="text" name="q" class="w-full py-4.5 pl-6 pr-16 rounded-full bg-white/10 border border-white/20 text-white placeholder-slate-400 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-accent-500 focus:bg-white/20 transition-all font-medium" placeholder="Search by title, author, or keyword..." />
+                        <input type="text" name="q" class="w-full py-4.5 pl-6 pr-16 rounded-full bg-white/10 border border-white/20 text-white placeholder-slate-400 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-accent-500 focus:bg-white/20 transition-all font-medium" placeholder="What are you seeking today? (e.g. Prayer, Leadership, Purpose...)" />
                         <button type="submit" class="absolute right-2 p-3 rounded-full bg-accent-500 hover:bg-accent-600 text-white transition-colors duration-300 border-0 flex items-center justify-center">
                             <i class="bi bi-search text-lg font-bold"></i>
                         </button>
@@ -73,8 +73,26 @@ $stats = getStats();
             </div>
         </section>
 
+        <!-- New: Authentic Message Section -->
+        <section class="py-20 bg-white w-full border-b border-slate-100">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent-500/10 text-accent-500 mb-6">
+                    <i class="bi bi-heart-pulse-fill text-2xl"></i>
+                </div>
+                <h2 class="text-3xl font-extrabold font-heading text-brand-900 mb-6">The Heart of This Library</h2>
+                <div class="space-y-6 text-slate-600 text-lg leading-relaxed max-w-3xl mx-auto">
+                    <p>
+                        We believe that a leader who reads is a leader who leads with depth. In a world full of noise, the MUTCU E-Library stands as a focused space for you to sit with the wisdom of seasoned men and women of God. 
+                    </p>
+                    <p>
+                        Every book and article here has been hand-selected to ensure that you aren't just gaining information, but true <strong>revelation</strong>. From building healthy relationships to discovering your divine assignment, we are here to walk alongside you in your journey of faith.
+                    </p>
+                </div>
+            </div>
+        </section>
+
         <!-- Categories Section -->
-        <section class="py-20 bg-brand-50 w-full relative z-20 -mt-8">
+        <section class="py-20 bg-brand-50 w-full relative z-20">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <?php foreach (['Faith' => ['icon' => 'bi-heart-fill', 'text' => 'text-mutcu-red', 'bg' => 'bg-red-50'], 'Leadership' => ['icon' => 'bi-graph-up-arrow', 'text' => 'text-emerald-500', 'bg' => 'bg-emerald-50'], 'Purpose' => ['icon' => 'bi-compass-fill', 'text' => 'text-mutcu-teal', 'bg' => 'bg-teal-50'], 'Relationships' => ['icon' => 'bi-people-fill', 'text' => 'text-purple-500', 'bg' => 'bg-purple-50']] as $category => $data): ?>
@@ -92,12 +110,12 @@ $stats = getStats();
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-10">
                     <div>
-                        <span class="text-accent-500 font-bold uppercase tracking-wider text-xs mb-1 block"><i class="bi bi-star-fill mr-1"></i> Curated Collection</span>
-                        <h2 class="text-3xl font-extrabold font-heading text-brand-900 mb-2">Featured Books</h2>
+                        <span class="text-accent-500 font-bold uppercase tracking-wider text-xs mb-1 block"><i class="bi bi-star-fill mr-1"></i> Recommended for You</span>
+                        <h2 class="text-3xl font-extrabold font-heading text-brand-900 mb-2">Featured Resources</h2>
                         <div class="w-16 h-1.5 bg-accent-500 rounded-full"></div>
                     </div>
                     <a href="library.php" class="hidden sm:inline-flex items-center px-5 py-2.5 bg-brand-50 hover:bg-brand-900 text-brand-900 hover:text-white rounded-full text-sm font-bold transition-colors group text-decoration-none border border-slate-200 hover:border-brand-900">
-                        Browse Full Catalog <i class="bi bi-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
+                        Explore Full Library <i class="bi bi-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
                     </a>
                 </div>
                 
@@ -125,7 +143,7 @@ $stats = getStats();
                                         <i class="bi bi-bookmark-plus text-lg"></i>
                                     </button>
                                     <a href="download.php?id=<?=$book['id']?>" target="_blank" onclick="event.stopPropagation();" class="flex-grow flex items-center justify-center bg-brand-900 hover:bg-brand-800 text-white rounded-xl font-bold text-sm transition-colors text-decoration-none shadow-md shadow-brand-900/20">
-                                        <i class="bi bi-cloud-arrow-down mr-2"></i> Access Resource
+                                        <i class="bi bi-cloud-arrow-down mr-2"></i> Access Now
                                     </a>
                                 </div>
                             </div>
@@ -134,19 +152,19 @@ $stats = getStats();
                 </div>
                 
                 <a href="library.php" class="sm:hidden mt-8 w-full inline-flex justify-center items-center py-3.5 px-4 rounded-xl bg-accent-500/10 text-accent-600 font-bold text-sm text-decoration-none">
-                    Browse Full Catalog <i class="bi bi-arrow-right ml-2"></i>
+                    Browse All Catalog <i class="bi bi-arrow-right ml-2"></i>
                 </a>
             </div>
         </section>
 
-        <!-- NEW: Featured Articles Section -->
+        <!-- Featured Articles Section -->
         <?php if (!empty($articles)): ?>
         <section class="py-20 bg-brand-50 w-full border-t border-slate-100">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-10">
                     <div>
                         <span class="text-mutcu-red font-bold uppercase tracking-wider text-xs mb-1 block"><i class="bi bi-journal-text mr-1"></i> Latest Insights</span>
-                        <h2 class="text-3xl font-extrabold font-heading text-brand-900 mb-2">Featured Articles</h2>
+                        <h2 class="text-3xl font-extrabold font-heading text-brand-900 mb-2">Wisdom for the Day</h2>
                         <div class="w-16 h-1.5 bg-mutcu-red rounded-full"></div>
                     </div>
                     <a href="articles.php" class="hidden sm:inline-flex items-center text-sm font-bold text-mutcu-red hover:text-red-700 transition-colors text-decoration-none">
@@ -167,7 +185,7 @@ $stats = getStats();
                                 <span class="bg-rose-50 text-mutcu-red text-xs font-bold px-3 py-1 rounded-full flex items-center">
                                     <i class="bi bi-pen mr-1"></i> Article
                                 </span>
-                                <span class="flex items-center text-xs text-slate-400 font-semibold bg-slate-50 px-2 py-1 rounded-md">
+                                <span class="flex items-center text-xs text-slate-500 font-semibold bg-slate-50 px-2 py-1 rounded-md">
                                     <i class="bi bi-clock mr-1"></i> <?=htmlspecialchars($article['read_time'] ?? '5 min')?>
                                 </span>
                             </div>
@@ -177,7 +195,7 @@ $stats = getStats();
                             <p class="text-slate-600 text-sm flex-grow mb-6 leading-relaxed line-clamp-3"><?=htmlspecialchars($article['abstract'])?></p>
                             
                             <a href="article.php?id=<?=$article['id']?>" target="_blank" class="inline-flex items-center text-accent-500 font-bold text-sm hover:text-brand-900 transition-colors mt-auto w-fit group-hover:underline text-decoration-none">
-                                Read Full Article <i class="bi bi-arrow-right ml-1 transform group-hover:translate-x-1 transition-transform"></i>
+                                Continue Reading <i class="bi bi-arrow-right ml-1 transform group-hover:translate-x-1 transition-transform"></i>
                             </a>
                         </div>
                     <?php endforeach; ?>

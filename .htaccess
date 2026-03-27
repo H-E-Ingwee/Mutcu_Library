@@ -1,0 +1,13 @@
+# 1. Force HTTPS
+RewriteEngine On
+RewriteCond % {HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# 2. Fix PHP Session Path (Hostinger Fix)
+php_value session.gc_maxlifetime 1440
+php_value session.save_path "/tmp"
+
+# 3. Increase Upload Limits
+php_value upload_max_filesize 64M
+php_value post_max_size 64M
+php_value memory_limit 256M
