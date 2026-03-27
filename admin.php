@@ -256,7 +256,10 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                                             <div class="text-slate-500 text-xs"><?=htmlspecialchars($u['email'])?></div>
                                         </td>
                                         <td class="p-4">
-                                            <?php if($u['role'] === 'admin'): ?>
+                                            <?php $isSuperAdmin = in_array(strtolower($u['email']), ['ingweplex@gmail.com', 'mutcusec@gmail.com']); ?>
+                                            <?php if($isSuperAdmin): ?>
+                                                <span class="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-md border border-purple-200 uppercase tracking-widest">Super Admin</span>
+                                            <?php elseif($u['role'] === 'admin'): ?>
                                                 <span class="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-1 rounded-md border border-rose-200 uppercase">Admin</span>
                                             <?php else: ?>
                                                 <span class="bg-slate-100 text-slate-700 text-xs font-bold px-2 py-1 rounded-md border border-slate-200 uppercase">Member</span>
@@ -266,10 +269,10 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                                             <?= $u['last_active'] ? htmlspecialchars(date('M d, Y', strtotime($u['last_active']))) : 'Never' ?>
                                         </td>
                                         <td class="p-4 text-right space-x-2">
-                                            <button class="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors border-0" title="Edit User" data-bs-toggle="modal" data-bs-target="#editUserModal" onclick="populateEditUserModal(<?=$u['id']?>, '<?=htmlspecialchars(addslashes($u['name']))?>', '<?=htmlspecialchars(addslashes($u['email']))?>', '<?=htmlspecialchars($u['role'])?>')">
+                                            <button class="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors border-0" title="Edit User" data-bs-toggle="modal" data-bs-target="#editUserModal" onclick="populateEditUserModal(<?=$u['id']?>, '<?=htmlspecialchars(addslashes($u['name']))?>', '<?=htmlspecialchars(addslashes($u['email']))?>', '<?=htmlspecialchars($u['role'])?>', <?= $isSuperAdmin ? 'true' : 'false' ?>)">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
-                                            <?php if ($u['id'] !== $currentUser['id']): ?>
+                                            <?php if ($u['id'] !== $currentUser['id'] && !$isSuperAdmin): ?>
                                             <form method="post" action="actions.php" class="inline-block m-0">
                                                 <input type="hidden" name="action" value="delete_user"><input type="hidden" name="user_id" value="<?=$u['id']?>"><input type="hidden" name="return_url" value="admin.php">
                                                 <button type="submit" class="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition-colors border-0" title="Delete User" onclick="return confirm('Are you sure you want to permanently delete this user?');"><i class="bi bi-trash"></i></button>
@@ -413,11 +416,30 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
             document.getElementById('editArticleReadTime').value = readTime;
         }
 
-        function populateEditUserModal(id, name, email, role) {
+        function populateEditUserModal(id, name, email, role, isSuperAdmin = false) {
             document.getElementById('editUserId').value = id;
             document.getElementById('editUserName').value = name;
             document.getElementById('editUserEmail').value = email;
-            document.getElementById('editUserRole').value = role;
+            const roleSelect = document.getElementById('editUserRole');
+            roleSelect.value = role;
+            
+            // Lock role dropdown for Super Admins
+            if (isSuperAdmin) {
+                roleSelect.setAttribute('disabled', 'disabled');
+                let hiddenRole = document.getElementById('hiddenEditUserRole');
+                if (!hiddenRole) {
+                    hiddenRole = document.createElement('input');
+                    hiddenRole.type = 'hidden';
+                    hiddenRole.id = 'hiddenEditUserRole';
+                    hiddenRole.name = 'role';
+                    document.getElementById('editUserModal').querySelector('form').appendChild(hiddenRole);
+                }
+                hiddenRole.value = 'admin';
+            } else {
+                roleSelect.removeAttribute('disabled');
+                const hiddenRole = document.getElementById('hiddenEditUserRole');
+                if (hiddenRole) hiddenRole.remove();
+            }
         }
     </script>
 </body>
