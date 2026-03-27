@@ -25,23 +25,49 @@ function isAdmin() {
     return $user && $user['role'] === 'admin';
 }
 
-// FORCE GENERATE IMAGE: Creates an image dynamically from the web with the Book Title
+// FORCE GENERATE UNSPLASH IMAGE: Creates a beautiful relevant image from Unsplash
 function getSymbolicCover($category, $title) {
-    // Clean the title so it fits nicely on the image
-    $shortTitle = mb_strimwidth($title, 0, 30, "...");
-    $urlEncodedTitle = urlencode($shortTitle);
+    $coverBanks = [
+        'Faith' => [
+            'https://images.unsplash.com/photo-1490127252417-7c393f993ee4?w=500&q=80',
+            'https://images.unsplash.com/photo-1438232992991-995b7058bbb3?w=500&q=80',
+            'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=500&q=80'
+        ],
+        'Leadership' => [
+            'https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&q=80',
+            'https://images.unsplash.com/photo-1519834785169-98be25ec3f84?w=500&q=80',
+            'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=500&q=80'
+        ],
+        'Purpose' => [
+            'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=500&q=80',
+            'https://images.unsplash.com/photo-1499728603263-13726abce5fd?w=500&q=80',
+            'https://images.unsplash.com/photo-1464982326199-86f32f81b211?w=500&q=80'
+        ],
+        'Relationships' => [
+            'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=500&q=80',
+            'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=500&q=80',
+            'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=500&q=80'
+        ]
+    ];
+
+    $hash = crc32($title ?: 'default');
+    $categoryArray = $coverBanks[$category] ?? $coverBanks['Faith'];
+    $index = abs($hash) % count($categoryArray);
     
-    // Generates a 400x600 image with MUTCU Navy Background (060B26) and Orange Text (FF9800)
-    return "https://placehold.co/400x600/060B26/FF9800?font=Montserrat&text={$urlEncodedTitle}";
+    return $categoryArray[$index];
 }
 
+// THE FIX: This function now actively hunts down old placeholder URLs and destroys them
 function processBooks(&$books) {
     foreach ($books as &$book) {
         $cover = trim($book['cover'] ?? '');
         $isValid = false;
         
-        // Check if the cover is a valid Web URL OR a valid local uploaded file
-        if (!empty($cover)) {
+        // Detect if the database contains the old boring placeholders
+        $isOldPlaceholder = strpos($cover, 'via.placeholder.com') !== false || strpos($cover, 'placehold.co') !== false;
+
+        // If the cover exists AND is NOT an old placeholder, accept it
+        if (!empty($cover) && !$isOldPlaceholder) {
             if (filter_var($cover, FILTER_VALIDATE_URL)) {
                 $isValid = true;
             } elseif (file_exists(__DIR__ . '/' . $cover)) {
@@ -49,7 +75,7 @@ function processBooks(&$books) {
             }
         }
 
-        // If no valid image exists, force the system to generate one reading the title
+        // If invalid or a placeholder, force the Unsplash image!
         if (!$isValid) {
             $book['cover'] = getSymbolicCover($book['category'], $book['title']);
         }
