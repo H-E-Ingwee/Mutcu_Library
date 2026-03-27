@@ -1,8 +1,10 @@
 <?php
 require_once __DIR__ . '/functions.php';
 $currentUser = currentUser();
-$books = getBooks();
-$articles = getArticles();
+
+// OPTIMIZED: We only fetch the first 4 books and 3 articles using our new Limit parameter
+$books = getBooks(4);
+$articles = getArticles(3);
 $stats = getStats();
 ?>
 <!DOCTYPE html>
