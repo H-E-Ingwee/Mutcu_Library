@@ -12,8 +12,19 @@ $categoryData = getCategoryDistribution();
 $weeklyData = getWeeklyInteractions();
 $eventsStmt = $pdo->query('SELECT event_type, target_type, COUNT(*) as count FROM events GROUP BY event_type, target_type');
 $events = $eventsStmt->fetchAll(PDO::FETCH_ASSOC);
-$recentEventsStmt = $pdo->query('SELECT e.event_type, e.target_type, e.created_at, u.name as user_name FROM events e LEFT JOIN users u ON e.user_id = u.id ORDER BY e.created_at DESC LIMIT 10');
+
+// FIX: New SQL Join to extract exact book and article names
+$recentEventsStmt = $pdo->query("
+    SELECT e.event_type, e.target_type, e.target_id, e.created_at, u.name as user_name,
+           b.title as book_title, a.title as article_title
+    FROM events e
+    LEFT JOIN users u ON e.user_id = u.id
+    LEFT JOIN books b ON e.target_id = b.id AND e.target_type = 'book'
+    LEFT JOIN articles a ON e.target_id = a.id AND e.target_type = 'article'
+    ORDER BY e.created_at DESC LIMIT 10
+");
 $recentEvents = $recentEventsStmt->fetchAll(PDO::FETCH_ASSOC);
+
 $flash_success = $_SESSION['flash_success'] ?? null;
 $flash_error = $_SESSION['flash_error'] ?? null;
 unset($_SESSION['flash_success'], $_SESSION['flash_error']);
@@ -135,14 +146,28 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                             <h5 class="font-bold font-heading text-brand-900 mb-6 border-b border-slate-100 pb-4">Recent User Activities</h5>
                             <div class="space-y-4">
                                 <?php if ($recentEvents): ?>
-                                    <?php foreach (array_slice($recentEvents, 0, 5) as $event): ?>
+                                    <?php foreach (array_slice($recentEvents, 0, 8) as $event): ?>
+                                        <?php 
+                                            // Determine specific target name from the JOIN
+                                            $targetName = 'Unknown Resource';
+                                            if ($event['target_type'] === 'book' && !empty($event['book_title'])) {
+                                                $targetName = '"' . htmlspecialchars($event['book_title']) . '"';
+                                            } elseif ($event['target_type'] === 'article' && !empty($event['article_title'])) {
+                                                $targetName = '"' . htmlspecialchars($event['article_title']) . '"';
+                                            } else {
+                                                $targetName = ucfirst($event['target_type']) . ' #' . $event['target_id'];
+                                            }
+                                        ?>
                                         <div class="flex flex-col pb-4 border-b border-slate-100 last:border-0 last:pb-0">
                                             <div class="flex justify-between items-start">
                                                 <div class="text-sm text-slate-700">
-                                                    <strong class="text-brand-900"><?= htmlspecialchars(ucfirst($event['event_type'])) ?></strong> on <em class="text-accent-600 font-semibold not-italic"><?= htmlspecialchars(ucfirst($event['target_type'])) ?></em>
+                                                    <strong class="text-brand-900"><?= htmlspecialchars(ucfirst($event['event_type'])) ?></strong> on 
+                                                    <em class="text-accent-600 font-semibold not-italic"><?= $targetName ?></em>
                                                     <?php if ($event['user_name']): ?> by <?= htmlspecialchars($event['user_name']) ?><?php endif; ?>
                                                 </div>
-                                                <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md ml-2 whitespace-nowrap"><?= htmlspecialchars(date('M d, H:i', strtotime($event['created_at']))) ?></span>
+                                                <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md ml-2 whitespace-nowrap">
+                                                    <?= htmlspecialchars(date('M d, H:i', strtotime($event['created_at']))) ?>
+                                                </span>
                                             </div>
                                         </div>
                                     <?php endforeach; ?>
