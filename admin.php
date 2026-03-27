@@ -356,7 +356,6 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
             const ctx1 = document.getElementById('interactionsChart');
             const ctx2 = document.getElementById('categoryChart');
             if(ctx1 && ctx2 && typeof Chart !== 'undefined') {
-                const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
                 const weeklyData = <?=json_encode($weeklyData)?>;
                 const categoryData = <?=json_encode($categoryData)?>;
                 const categoryLabels = categoryData.map(item => item.category);
@@ -364,8 +363,9 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 
                 new Chart(ctx1, {
                     type: 'line',
-                    data: { labels: days, datasets: [{ label: 'Interactions', data: weeklyData, borderColor: '#FF9800', backgroundColor: 'rgba(255, 152, 0, 0.1)', fill: true, tension: 0.4, borderWidth: 3, pointBackgroundColor: '#060B26' }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                    // FIX: Connect the real dynamically generated labels from the database
+                    data: { labels: weeklyData.labels, datasets: [{ label: 'Interactions', data: weeklyData.data, borderColor: '#FF9800', backgroundColor: 'rgba(255, 152, 0, 0.1)', fill: true, tension: 0.4, borderWidth: 3, pointBackgroundColor: '#060B26' }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
                 });
 
                 new Chart(ctx2, {
