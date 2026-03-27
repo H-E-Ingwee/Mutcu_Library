@@ -1,5 +1,21 @@
 document.addEventListener('DOMContentLoaded', () => {
     
+    // GLOBAL CSRF FORM PROTECTOR
+    // Automatically injects the CSRF token into every POST form on the website before it submits
+    document.addEventListener('submit', function(e) {
+        const form = e.target;
+        if (form && form.tagName === 'FORM' && form.method.toUpperCase() === 'POST') {
+            const csrfToken = document.getElementById('csrf_token_global')?.value;
+            if (csrfToken && !form.querySelector('input[name="csrf_token"]')) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'csrf_token';
+                input.value = csrfToken;
+                form.appendChild(input);
+            }
+        }
+    });
+
     // Set up filter buttons
     const filterBtns = document.querySelectorAll('.ajax-filter');
     if (filterBtns.length > 0) {
@@ -203,6 +219,7 @@ window.toggleBookmark = async function(bookId, btnElement) {
         const formData = new FormData();
         formData.append('action', 'toggle_bookmark');
         formData.append('book_id', bookId);
+        formData.append('csrf_token', document.getElementById('csrf_token_global').value); // ADD CSRF
 
         const response = await fetch('actions.php', { method: 'POST', body: formData });
         const result = await response.json();
@@ -235,6 +252,7 @@ window.updateReadStatus = async function(bookId, status) {
         formData.append('action', 'update_read_status');
         formData.append('book_id', bookId);
         formData.append('status', status);
+        formData.append('csrf_token', document.getElementById('csrf_token_global').value); // ADD CSRF
         
         await fetch('actions.php', { method: 'POST', body: formData });
         // Status updates invisibly in the background
