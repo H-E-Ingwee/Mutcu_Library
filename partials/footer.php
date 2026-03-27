@@ -46,6 +46,7 @@
                         </a>
                     </li>
                     <li class="flex items-start text-slate-400"><i class="bi bi-hdd-network mr-3 text-lg"></i> Hosted via G-Drive</li>
+                    <li class="flex items-start text-slate-400"><i class="bi bi-code-square mr-3 text-lg"></i> v3.0 Tailwind Release</li>
                 </ul>
             </div>
         </div>
@@ -97,6 +98,15 @@
                                 <i class="bi bi-cloud-arrow-down mr-2"></i> Access Resource
                             </a>
                         </div>
+                        
+                        <!-- NEW: Dynamic Related Books Section -->
+                        <div class="mt-6 pt-5 border-t border-slate-100 hidden" id="quickViewRelatedContainer">
+                            <h6 class="font-bold font-heading text-brand-900 mb-3 text-xs uppercase tracking-wider">Similar Books You Might Like</h6>
+                            <div id="quickViewRelatedGrid" class="grid grid-cols-3 gap-3">
+                                <!-- Books injected via JS -->
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
