@@ -120,6 +120,37 @@ function addArticleView($id, $userId = null) {
     trackEvent($userId, 'view', 'article', $id);
 }
 
+function getCategoryDistribution() {
+    global $pdo;
+    $stmt = $pdo->query('SELECT category, COUNT(*) as count FROM books GROUP BY category');
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getWeeklyInteractions() {
+    global $pdo;
+    $stmt = $pdo->query("
+        SELECT DATE(created_at) as date, COUNT(*) as count
+        FROM events
+        WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+        GROUP BY DATE(created_at)
+        ORDER BY date
+    ");
+    $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $result = [];
+    for ($i = 6; $i >= 0; $i--) {
+        $date = date('Y-m-d', strtotime("-$i days"));
+        $count = 0;
+        foreach ($data as $row) {
+            if ($row['date'] === $date) {
+                $count = (int)$row['count'];
+                break;
+            }
+        }
+        $result[] = $count;
+    }
+    return $result;
+}
+
 function addBookDownload($id, $userId = null) {
     global $pdo;
     $pdo->prepare('UPDATE books SET download_count = download_count + 1 WHERE id=?')->execute([$id]);

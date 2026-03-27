@@ -8,6 +8,8 @@ if (!$currentUser || !isAdmin()) {
 $books = getBooks();
 $articles = getArticles();
 $stats = getStats();
+$categoryData = getCategoryDistribution();
+$weeklyData = getWeeklyInteractions();
 $eventsStmt = $pdo->query('SELECT event_type, target_type, COUNT(*) as count FROM events GROUP BY event_type, target_type');
 $events = $eventsStmt->fetchAll(PDO::FETCH_ASSOC);
 $recentEventsStmt = $pdo->query('SELECT e.event_type, e.target_type, e.created_at, u.name as user_name FROM events e LEFT JOIN users u ON e.user_id = u.id ORDER BY e.created_at DESC LIMIT 10');
@@ -96,6 +98,9 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                         <h5 class="mb-0 fw-bold text-primary-brand">Book Catalog</h5>
                         <button class="btn btn-sm btn-accent rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addBookModal"><i class="bi bi-plus-circle-fill me-1"></i> Add Book</button>
                     </div>
+                    <div class="px-3 py-2 border-bottom">
+                        <input type="text" id="searchBooksAdmin" class="form-control form-control-sm w-auto" placeholder="Search books...">
+                    </div>
                     <div class="card-body p-0 table-responsive">
                         <table class="table table-hover table-custom align-middle mb-0">
                             <thead><tr><th>ID</th><th>Cover</th><th>Title & Author</th><th>Category</th><th>Link</th><th class="text-end">Actions</th></tr></thead>
@@ -124,6 +129,9 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                     <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <h5 class="mb-0 fw-bold text-primary-brand">Articles Catalog</h5>
                         <button class="btn btn-sm btn-accent rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addArticleModal"><i class="bi bi-plus-circle-fill me-1"></i> Add Article</button>
+                    </div>
+                    <div class="px-3 py-2 border-bottom">
+                        <input type="text" id="searchArticlesAdmin" class="form-control form-control-sm w-auto" placeholder="Search articles...">
                     </div>
                     <div class="card-body p-0 table-responsive">
                         <table class="table table-hover table-custom align-middle mb-0">
@@ -192,11 +200,65 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 <script src="assets/js/app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    (function(){ const ctx1 = document.getElementById('interactionsChart'), ctx2 = document.getElementById('categoryChart');
+    (function(){
+        const ctx1 = document.getElementById('interactionsChart');
+        const ctx2 = document.getElementById('categoryChart');
         const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-        new Chart(document.getElementById('interactionsChart'),{type:'line',data:{labels:days,datasets:[{label:'Visits',data:[120,190,150,220,180,290,350],borderColor:'#04003d',backgroundColor:'rgba(4,0,61,0.12)',fill:true,tension:0.4},{label:'Downloads',data:[40,60,45,80,55,110,140],borderColor:'#ff9700',backgroundColor:'transparent',borderDash:[5,5],tension:0.4}]},options:{responsive:true,maintainAspectRatio:false}});
-        new Chart(document.getElementById('categoryChart'),{type:'doughnut',data:{labels:['Faith','Leadership','Purpose','Relationships'],datasets:[{data:[45,25,15,15],backgroundColor:['#dc3545','#ff9700','#17a2b8','#20c997'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
+        const weeklyData = <?=json_encode($weeklyData)?>;
+        const categoryData = <?=json_encode($categoryData)?>;
+        const categoryLabels = categoryData.map(item => item.category);
+        const categoryCounts = categoryData.map(item => parseInt(item.count));
+
+        new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: days,
+                datasets: [{
+                    label: 'Interactions',
+                    data: weeklyData,
+                    borderColor: '#04003d',
+                    backgroundColor: 'rgba(4,0,61,0.12)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: categoryLabels,
+                datasets: [{
+                    data: categoryCounts,
+                    backgroundColor: ['#dc3545','#ff9700','#17a2b8','#20c997','#6f42c1','#e83e8c','#fd7e14'],
+                    borderWidth: 0
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
     })();
+
+    // Table search
+    document.getElementById('searchBooksAdmin').addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#manage-books tbody tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+    });
+
+    document.getElementById('searchArticlesAdmin').addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#manage-articles tbody tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+    });
+
+    function populateEditBookModal(id, title, author, category, driveLink, description, cover) {
 
     function populateEditBookModal(id, title, author, category, driveLink, description, cover) {
         document.getElementById('editBookId').value = id;

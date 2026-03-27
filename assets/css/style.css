@@ -150,3 +150,8 @@ footer h5, footer h4 { color: white; font-weight: 700; }
 [data-bs-theme="dark"] footer {
     background-color: #1a1a2e;
 }
+
+.table-custom td {
+    vertical-align: middle;
+    white-space: normal;
+}
