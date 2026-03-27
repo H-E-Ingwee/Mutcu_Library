@@ -12,7 +12,7 @@ function csrf_token() {
 }
 function verify_csrf() {
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        $_SESSION['flash_error'] = "Security token expired or invalid. Please try again.";
+        $_SESSION['flash_error'] = "Security token expired or invalid. Please refresh and try again.";
         header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
         exit;
     }
@@ -20,16 +20,16 @@ function verify_csrf() {
 
 require_once __DIR__ . '/db.php';
 
-// --- DATABASE AUTO-FIXER ---
+// --- DATABASE AUTO-FIXER & SUPER ADMIN SETUP ---
 try {
     global $pdo;
     $pdo->exec("CREATE TABLE IF NOT EXISTS user_bookmarks (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, book_id INT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY unique_bookmark (user_id, book_id))");
     $pdo->exec("CREATE TABLE IF NOT EXISTS events (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NULL, event_type VARCHAR(50) NOT NULL, target_type VARCHAR(50) NOT NULL, target_id INT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
     $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS reading_goal INT DEFAULT 0");
-    $pdo->exec("ALTER TABLE books ADD COLUMN download_count INT DEFAULT 0");
-    $pdo->exec("ALTER TABLE user_bookmarks ADD COLUMN status VARCHAR(20) DEFAULT 'to_read'");
+    $pdo->exec("ALTER TABLE books ADD COLUMN IF NOT EXISTS download_count INT DEFAULT 0");
+    $pdo->exec("ALTER TABLE user_bookmarks ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'to_read'");
     
-    // --- SUPER ADMIN AUTO-SETUP ---
+    // Super Admin Auto-Setup
     $superAdmins = [
         ['name' => 'Brian Ingwee', 'email' => 'Ingweplex@gmail.com', 'password' => 'Ingweplex'],
         ['name' => 'Natasha Amani', 'email' => 'MutcuSec@gmail.com', 'password' => 'MutcuSec@2026']
@@ -41,7 +41,6 @@ try {
             $insertStmt = $pdo->prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, "admin")');
             $insertStmt->execute([$sa['name'], $sa['email'], password_hash($sa['password'], PASSWORD_DEFAULT)]);
         } else {
-            // Ensure they always retain the admin role
             $pdo->prepare('UPDATE users SET role = "admin" WHERE email = ?')->execute([$sa['email']]);
         }
     }
@@ -60,6 +59,7 @@ function isAdmin() {
     return $user && $user['role'] === 'admin';
 }
 
+// Generates MUTCU Branded placeholder images dynamically
 function getSymbolicCover($category, $title) {
     $shortTitle = mb_strimwidth($title, 0, 30, "...");
     $urlEncodedTitle = urlencode($shortTitle);
@@ -71,10 +71,10 @@ function processBooks(&$books) {
         $cover = trim($book['cover'] ?? '');
         $isValid = false;
         
-        if (!empty($cover)) {
-            if (filter_var($cover, FILTER_VALIDATE_URL)) {
-                $isValid = true;
-            } elseif (file_exists(__DIR__ . '/' . $cover)) {
+        $isOldPlaceholder = strpos($cover, 'via.placeholder.com') !== false || strpos($cover, 'placehold.co') !== false;
+
+        if (!empty($cover) && !$isOldPlaceholder) {
+            if (filter_var($cover, FILTER_VALIDATE_URL) || file_exists(__DIR__ . '/' . $cover)) {
                 $isValid = true;
             }
         }
@@ -89,9 +89,7 @@ function getBooks($limit = null) {
     global $pdo;
     try {
         $sql = 'SELECT * FROM books ORDER BY id DESC';
-        if ($limit) {
-            $sql .= ' LIMIT ' . (int)$limit;
-        }
+        if ($limit) $sql .= ' LIMIT ' . (int)$limit;
         $stmt = $pdo->query($sql);
         $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
         processBooks($books);
@@ -103,25 +101,16 @@ function getArticles($limit = null) {
     global $pdo;
     try { 
         $sql = 'SELECT * FROM articles ORDER BY id DESC';
-        if ($limit) {
-            $sql .= ' LIMIT ' . (int)$limit;
-        }
+        if ($limit) $sql .= ' LIMIT ' . (int)$limit;
         return $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC); 
     } 
     catch (PDOException $e) { return []; }
 }
 
-// NEW: Fetch all users for the Admin Panel
 function getUsers() {
     global $pdo;
     try {
-        // Fetches users and joins with the events table to find their most recent activity date
-        $stmt = $pdo->query('
-            SELECT u.*, 
-                   (SELECT MAX(created_at) FROM events WHERE user_id = u.id) as last_active 
-            FROM users u 
-            ORDER BY u.created_at DESC
-        ');
+        $stmt = $pdo->query('SELECT u.*, (SELECT MAX(created_at) FROM events WHERE user_id = u.id) as last_active FROM users u ORDER BY u.created_at DESC');
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) { return []; }
 }
@@ -137,7 +126,7 @@ function logEvent($userId, $eventType, $targetType, $targetId = null) {
 function getUserBookmarks($userId) {
     global $pdo;
     try {
-        $stmt = $pdo->prepare('SELECT b.* FROM books b JOIN user_bookmarks ub ON b.id = ub.book_id WHERE ub.user_id = ? ORDER BY ub.created_at DESC');
+        $stmt = $pdo->prepare('SELECT b.*, ub.status as read_status FROM books b JOIN user_bookmarks ub ON b.id = ub.book_id WHERE ub.user_id = ? ORDER BY ub.created_at DESC');
         $stmt->execute([$userId]);
         $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
         processBooks($books);
@@ -181,16 +170,52 @@ function getWeeklyInteractions() {
     try {
         $stmt = $pdo->query('SELECT DATE(created_at) as date, COUNT(*) as count FROM events WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) GROUP BY DATE(created_at) ORDER BY date ASC');
         $data = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
-        
-        // FIX: Generate dynamic, real rolling 7-day labels instead of hardcoded Mon-Sun
         $weekly = ['labels' => [], 'data' => []];
         for ($i = 6; $i >= 0; $i--) {
             $date = date('Y-m-d', strtotime("-$i days"));
-            $weekly['labels'][] = date('D', strtotime($date)); // Output exact day e.g., 'Wed'
+            $weekly['labels'][] = date('D', strtotime($date));
             $weekly['data'][] = (int)($data[$date] ?? 0);
         }
         return $weekly;
-    } catch(PDOException $e) { 
-        return ['labels' => ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], 'data' => array_fill(0, 7, 0)]; 
+    } catch(PDOException $e) { return ['labels' => ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], 'data' => array_fill(0, 7, 0)]; }
+}
+
+// --- AI INTEGRATION ENGINE ---
+function callOpenAI($prompt, $systemInstruction = "You are a helpful assistant.") {
+    if (!defined('OPENAI_API_KEY') || empty(OPENAI_API_KEY)) {
+        return "Error: OPENAI_API_KEY is missing in config.php";
     }
+
+    $url = 'https://api.openai.com/v1/chat/completions';
+    $data = [
+        'model' => 'gpt-3.5-turbo', 
+        'messages' => [
+            ['role' => 'system', 'content' => $systemInstruction],
+            ['role' => 'user', 'content' => $prompt]
+        ],
+        'temperature' => 0.7,
+        'max_tokens' => 150 
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . OPENAI_API_KEY
+    ]);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); 
+
+    $response = curl_exec($ch);
+    $error = curl_error($ch);
+    curl_close($ch);
+
+    if ($error) return "AI Connection Error: " . $error;
+
+    $result = json_decode($response, true);
+    if (isset($result['choices'][0]['message']['content'])) {
+        return trim($result['choices'][0]['message']['content']);
+    }
+    return "AI Error: Could not generate response.";
 }
