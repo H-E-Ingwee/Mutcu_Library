@@ -7,6 +7,7 @@ if (!$currentUser || !isAdmin()) {
 }
 $books = getBooks();
 $articles = getArticles();
+$users = getUsers(); // NEW: Fetch all users
 $stats = getStats();
 $categoryData = getCategoryDistribution();
 $weeklyData = getWeeklyInteractions();
@@ -44,21 +45,22 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                     <h2 class="text-3xl font-extrabold font-heading text-brand-900 flex items-center mb-2">
                         <i class="bi bi-speedometer2 text-accent-500 mr-3"></i> Admin Dashboard
                     </h2>
-                    <p class="text-slate-500">Manage library inventory, articles, and analyze system metrics.</p>
+                    <p class="text-slate-500">Manage library inventory, users, and analyze system metrics.</p>
                 </div>
             </div>
 
+            <!-- Stats -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="bg-brand-900 text-white rounded-2xl p-6 shadow-sm border border-brand-800 hover:-translate-y-1 transition-transform">
                     <div class="flex justify-between items-center mb-4"><h6 class="text-slate-400 font-bold uppercase text-xs tracking-wider m-0">Total Books</h6><i class="bi bi-journals text-2xl text-accent-500"></i></div>
                     <h2 class="text-4xl font-extrabold font-heading m-0"><?= $stats['total_books'] ?></h2>
                 </div>
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:-translate-y-1 transition-transform">
-                    <div class="flex justify-between items-center mb-4"><h6 class="text-slate-400 font-bold uppercase text-xs tracking-wider m-0">Total Articles</h6><i class="bi bi-file-text text-2xl text-rose-500"></i></div>
+                    <div class="flex justify-between items-center mb-4"><h6 class="text-slate-400 font-bold uppercase text-xs tracking-wider m-0">Total Articles</h6><i class="bi bi-file-text text-2xl text-[#FF1A35]"></i></div>
                     <h2 class="text-4xl font-extrabold font-heading text-brand-900 m-0"><?= $stats['total_articles'] ?></h2>
                 </div>
-                <div class="bg-emerald-500 text-white rounded-2xl p-6 shadow-sm hover:-translate-y-1 transition-transform">
-                    <div class="flex justify-between items-center mb-4"><h6 class="text-emerald-100 font-bold uppercase text-xs tracking-wider m-0">Total Users</h6><i class="bi bi-people text-2xl text-white"></i></div>
+                <div class="bg-[#2DD4BF] text-brand-900 rounded-2xl p-6 shadow-sm hover:-translate-y-1 transition-transform">
+                    <div class="flex justify-between items-center mb-4"><h6 class="text-brand-900/80 font-bold uppercase text-xs tracking-wider m-0">Total Users</h6><i class="bi bi-people text-2xl text-brand-900"></i></div>
                     <h2 class="text-4xl font-extrabold font-heading m-0"><?= $stats['total_users'] ?></h2>
                 </div>
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:-translate-y-1 transition-transform">
@@ -67,13 +69,16 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                 </div>
             </div>
 
+            <!-- Enhanced Tabs -->
             <ul class="nav nav-pills flex flex-wrap gap-2 mb-8 border-b border-slate-200 pb-4" id="adminTabs" role="tablist">
                 <li class="nav-item"><button class="nav-link active rounded-xl px-5 py-2.5 font-bold text-sm bg-slate-100 text-slate-600 focus:bg-brand-900 focus:text-white aria-selected:bg-brand-900 aria-selected:text-white transition-colors border-0" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab">Analytics</button></li>
                 <li class="nav-item"><button class="nav-link rounded-xl px-5 py-2.5 font-bold text-sm bg-slate-100 text-slate-600 focus:bg-brand-900 focus:text-white aria-selected:bg-brand-900 aria-selected:text-white transition-colors border-0" id="books-tab" data-bs-toggle="tab" data-bs-target="#manage-books" type="button" role="tab">Manage Books</button></li>
                 <li class="nav-item"><button class="nav-link rounded-xl px-5 py-2.5 font-bold text-sm bg-slate-100 text-slate-600 focus:bg-brand-900 focus:text-white aria-selected:bg-brand-900 aria-selected:text-white transition-colors border-0" id="articles-tab" data-bs-toggle="tab" data-bs-target="#manage-articles" type="button" role="tab">Manage Articles</button></li>
+                <li class="nav-item"><button class="nav-link rounded-xl px-5 py-2.5 font-bold text-sm bg-slate-100 text-slate-600 focus:bg-brand-900 focus:text-white aria-selected:bg-brand-900 aria-selected:text-white transition-colors border-0" id="users-tab" data-bs-toggle="tab" data-bs-target="#manage-users" type="button" role="tab">Manage Users</button></li>
             </ul>
 
             <div class="tab-content" id="adminTabsContent">
+                <!-- Analytics Tab -->
                 <div class="tab-pane fade show active" id="analytics" role="tabpanel">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                         <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
@@ -127,13 +132,19 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                     </div>
                 </div>
 
+                <!-- Manage Books Tab -->
                 <div class="tab-pane fade" id="manage-books" role="tabpanel">
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <h5 class="font-bold font-heading text-brand-900 m-0">Book Catalog</h5>
-                            <button class="px-5 py-2.5 bg-accent-500 hover:bg-accent-600 text-white font-bold rounded-xl text-sm transition-colors shadow-sm flex items-center border-0" data-bs-toggle="modal" data-bs-target="#addBookModal">
-                                <i class="bi bi-plus-circle-fill mr-2 text-lg"></i> Add Book
-                            </button>
+                            <div class="flex gap-2">
+                                <a href="actions.php?action=export_csv&type=books" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-brand-900 font-bold rounded-xl text-sm transition-colors border border-slate-200 flex items-center text-decoration-none">
+                                    <i class="bi bi-download mr-2 text-lg"></i> Export CSV
+                                </a>
+                                <button class="px-5 py-2.5 bg-accent-500 hover:bg-accent-600 text-white font-bold rounded-xl text-sm transition-colors shadow-sm flex items-center border-0" data-bs-toggle="modal" data-bs-target="#addBookModal">
+                                    <i class="bi bi-plus-circle-fill mr-2 text-lg"></i> Add Book
+                                </button>
+                            </div>
                         </div>
                         <div class="p-4 bg-slate-50 border-b border-slate-200">
                             <div class="relative max-w-md">
@@ -171,13 +182,19 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                     </div>
                 </div>
 
+                <!-- Manage Articles Tab -->
                 <div class="tab-pane fade" id="manage-articles" role="tabpanel">
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <h5 class="font-bold font-heading text-brand-900 m-0">Articles Catalog</h5>
-                            <button class="px-5 py-2.5 bg-accent-500 hover:bg-accent-600 text-white font-bold rounded-xl text-sm transition-colors shadow-sm flex items-center border-0" data-bs-toggle="modal" data-bs-target="#addArticleModal">
-                                <i class="bi bi-plus-circle-fill mr-2 text-lg"></i> Add Article
-                            </button>
+                            <div class="flex gap-2">
+                                <a href="actions.php?action=export_csv&type=articles" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-brand-900 font-bold rounded-xl text-sm transition-colors border border-slate-200 flex items-center text-decoration-none">
+                                    <i class="bi bi-download mr-2 text-lg"></i> Export CSV
+                                </a>
+                                <button class="px-5 py-2.5 bg-accent-500 hover:bg-accent-600 text-white font-bold rounded-xl text-sm transition-colors shadow-sm flex items-center border-0" data-bs-toggle="modal" data-bs-target="#addArticleModal">
+                                    <i class="bi bi-plus-circle-fill mr-2 text-lg"></i> Add Article
+                                </button>
+                            </div>
                         </div>
                         <div class="p-4 bg-slate-50 border-b border-slate-200">
                             <div class="relative max-w-md"><i class="bi bi-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i><input type="text" id="searchArticlesAdmin" class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-accent-500 outline-none" placeholder="Search articles..."></div>
@@ -203,48 +220,99 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                         </div>
                     </div>
                 </div>
+
+                <!-- NEW: Manage Users Tab -->
+                <div class="tab-pane fade" id="manage-users" role="tabpanel">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <h5 class="font-bold font-heading text-brand-900 m-0">Registered Users</h5>
+                            <a href="actions.php?action=export_csv&type=users" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-brand-900 font-bold rounded-xl text-sm transition-colors border border-slate-200 flex items-center text-decoration-none">
+                                <i class="bi bi-download mr-2 text-lg"></i> Export CSV
+                            </a>
+                        </div>
+                        <div class="p-4 bg-slate-50 border-b border-slate-200">
+                            <div class="relative max-w-md">
+                                <i class="bi bi-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                                <input type="text" id="searchUsersAdmin" class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-accent-500 outline-none" placeholder="Search by name or email...">
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse" id="usersTable">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
+                                        <th class="p-4 font-bold">ID</th>
+                                        <th class="p-4 font-bold">User Details</th>
+                                        <th class="p-4 font-bold">Role</th>
+                                        <th class="p-4 font-bold">Last Active</th>
+                                        <th class="p-4 font-bold text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm">
+                                    <?php foreach ($users as $u): ?>
+                                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                        <td class="p-4 text-slate-500 font-semibold">#<?=$u['id']?></td>
+                                        <td class="p-4">
+                                            <div class="font-bold text-brand-900 mb-1"><?=htmlspecialchars($u['name'])?></div>
+                                            <div class="text-slate-500 text-xs"><?=htmlspecialchars($u['email'])?></div>
+                                        </td>
+                                        <td class="p-4">
+                                            <?php if($u['role'] === 'admin'): ?>
+                                                <span class="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-1 rounded-md border border-rose-200 uppercase">Admin</span>
+                                            <?php else: ?>
+                                                <span class="bg-slate-100 text-slate-700 text-xs font-bold px-2 py-1 rounded-md border border-slate-200 uppercase">Member</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="p-4 text-slate-500 text-xs">
+                                            <?= $u['last_active'] ? htmlspecialchars(date('M d, Y', strtotime($u['last_active']))) : 'Never' ?>
+                                        </td>
+                                        <td class="p-4 text-right space-x-2">
+                                            <button class="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors border-0" title="Edit User" data-bs-toggle="modal" data-bs-target="#editUserModal" onclick="populateEditUserModal(<?=$u['id']?>, '<?=htmlspecialchars(addslashes($u['name']))?>', '<?=htmlspecialchars(addslashes($u['email']))?>', '<?=htmlspecialchars($u['role'])?>')">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <?php if ($u['id'] !== $currentUser['id']): ?>
+                                            <form method="post" action="actions.php" class="inline-block m-0">
+                                                <input type="hidden" name="action" value="delete_user"><input type="hidden" name="user_id" value="<?=$u['id']?>"><input type="hidden" name="return_url" value="admin.php">
+                                                <button type="submit" class="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition-colors border-0" title="Delete User" onclick="return confirm('Are you sure you want to permanently delete this user?');"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </main>
 
-    <!-- NEW FILE UPLOAD MODALS (enctype added) -->
+    <!-- Admin Modals -->
+    <!-- Add Book Modal -->
     <div class="modal fade" id="addBookModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-2xl border-0 shadow-2xl overflow-hidden"><div class="modal-header bg-brand-900 border-0 p-5"><h5 class="modal-title font-heading font-bold text-white"><i class="bi bi-journal-plus mr-2 text-accent-500"></i> Add New Book</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-        <form method="post" action="actions.php" enctype="multipart/form-data"> <!-- ENCTYPE ADDED FOR FILES -->
+        <form method="post" action="actions.php" enctype="multipart/form-data">
             <div class="modal-body p-6 bg-brand-50 space-y-4"><input type="hidden" name="action" value="add_book"><input type="hidden" name="return_url" value="admin.php">
                 <div><label class="block text-sm font-bold text-slate-700 mb-1">Book Title</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="title" required></div>
                 <div><label class="block text-sm font-bold text-slate-700 mb-1">Author</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="author" required></div>
                 <div><label class="block text-sm font-bold text-slate-700 mb-1">Category</label><select class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none bg-white" name="category" required><option value="" disabled selected>Select...</option><option>Faith</option><option>Leadership</option><option>Purpose</option><option>Relationships</option></select></div>
                 <div><label class="block text-sm font-bold text-slate-700 mb-1">Drive Link</label><input type="url" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="drive_link" placeholder="https://drive.google.com/..." required></div>
-                
-                <!-- NEW FILE UPLOAD INPUT -->
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Cover Image (Optional)</label>
-                    <input type="file" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none bg-white" name="cover_file" accept="image/*">
-                    <p class="text-xs text-slate-500 mt-1"><i class="bi bi-info-circle mr-1"></i>If you leave this empty, the system will automatically generate a beautiful cover containing the book's title!</p>
-                </div>
-                
+                <div><label class="block text-sm font-bold text-slate-700 mb-1">Cover Image (Optional)</label><input type="file" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none bg-white" name="cover_file" accept="image/*"><p class="text-xs text-slate-500 mt-1"><i class="bi bi-info-circle mr-1"></i>Leave empty to auto-generate a beautiful cover.</p></div>
                 <div><label class="block text-sm font-bold text-slate-700 mb-1">Description</label><textarea class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none h-24" name="description" required></textarea></div>
             </div>
             <div class="modal-footer bg-white border-t border-slate-200 p-4"><button type="button" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-colors border-0" data-bs-dismiss="modal">Cancel</button><button type="submit" class="px-5 py-2.5 bg-accent-500 hover:bg-accent-600 text-white rounded-xl font-bold transition-colors shadow-sm border-0">Save Book</button></div>
         </form>
     </div></div></div>
 
+    <!-- Edit Book Modal -->
     <div class="modal fade" id="editBookModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-2xl border-0 shadow-2xl overflow-hidden"><div class="modal-header bg-brand-900 border-0 p-5"><h5 class="modal-title font-heading font-bold text-white"><i class="bi bi-pencil-square mr-2 text-accent-500"></i> Edit Book</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-        <form method="post" action="actions.php" enctype="multipart/form-data"> <!-- ENCTYPE ADDED -->
+        <form method="post" action="actions.php" enctype="multipart/form-data">
             <div class="modal-body p-6 bg-brand-50 space-y-4"><input type="hidden" name="action" value="edit_book"><input type="hidden" name="book_id" id="editBookId"><input type="hidden" name="return_url" value="admin.php">
                 <div><label class="block text-sm font-bold text-slate-700 mb-1">Book Title</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="title" id="editBookTitle" required></div>
                 <div><label class="block text-sm font-bold text-slate-700 mb-1">Author</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="author" id="editBookAuthor" required></div>
                 <div><label class="block text-sm font-bold text-slate-700 mb-1">Category</label><select class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none bg-white" name="category" id="editBookCategory" required><option>Faith</option><option>Leadership</option><option>Purpose</option><option>Relationships</option></select></div>
                 <div><label class="block text-sm font-bold text-slate-700 mb-1">Drive Link</label><input type="url" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="drive_link" id="editBookDriveLink" required></div>
-                
-                <!-- NEW FILE UPLOAD INPUT -->
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Update Cover Image (Optional)</label>
-                    <input type="file" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none bg-white" name="cover_file" accept="image/*">
-                    <input type="hidden" name="existing_cover" id="editBookExistingCover"> <!-- Preserves old cover -->
-                    <p class="text-xs text-slate-500 mt-1">Leave empty to keep the current cover image.</p>
-                </div>
-                
+                <div><label class="block text-sm font-bold text-slate-700 mb-1">Update Cover Image (Optional)</label><input type="file" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none bg-white" name="cover_file" accept="image/*"><input type="hidden" name="existing_cover" id="editBookExistingCover"></div>
                 <div><label class="block text-sm font-bold text-slate-700 mb-1">Description</label><textarea class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none h-24" name="description" id="editBookDescription" required></textarea></div>
             </div>
             <div class="modal-footer bg-white border-t border-slate-200 p-4"><button type="button" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-colors border-0" data-bs-dismiss="modal">Cancel</button><button type="submit" class="px-5 py-2.5 bg-accent-500 hover:bg-accent-600 text-white rounded-xl font-bold transition-colors shadow-sm border-0">Update Book</button></div>
@@ -254,6 +322,28 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
     <!-- Article Modals -->
     <div class="modal fade" id="addArticleModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-2xl border-0 shadow-2xl overflow-hidden"><div class="modal-header bg-brand-900 p-5"><h5 class="modal-title font-heading font-bold text-white"><i class="bi bi-file-earmark-plus mr-2 text-accent-500"></i> Add Article</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><form method="post" action="actions.php"><div class="modal-body p-6 bg-brand-50 space-y-4"><input type="hidden" name="action" value="add_article"><input type="hidden" name="return_url" value="admin.php"><div><label class="block text-sm font-bold text-slate-700 mb-1">Title</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="title" required></div><div><label class="block text-sm font-bold text-slate-700 mb-1">Author</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="author" required></div><div><label class="block text-sm font-bold text-slate-700 mb-1">Link</label><input type="url" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="link" required></div><div><label class="block text-sm font-bold text-slate-700 mb-1">Abstract</label><textarea class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none h-24" name="abstract" required></textarea></div><div class="flex gap-4"><div class="flex-1"><label class="block text-sm font-bold text-slate-700 mb-1">Date</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="date" value="<?=date('M d, Y')?>" required></div><div class="flex-1"><label class="block text-sm font-bold text-slate-700 mb-1">Read Time</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="read_time" value="5 min read" required></div></div></div><div class="modal-footer bg-white p-4"><button type="button" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 border-0" data-bs-dismiss="modal">Cancel</button><button type="submit" class="px-5 py-2.5 bg-accent-500 text-white rounded-xl font-bold border-0">Save Article</button></div></form></div></div></div>
     <div class="modal fade" id="editArticleModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-2xl border-0 shadow-2xl overflow-hidden"><div class="modal-header bg-brand-900 p-5"><h5 class="modal-title font-heading font-bold text-white"><i class="bi bi-pencil-square mr-2 text-accent-500"></i> Edit Article</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><form method="post" action="actions.php"><div class="modal-body p-6 bg-brand-50 space-y-4"><input type="hidden" name="action" value="edit_article"><input type="hidden" name="article_id" id="editArticleId"><input type="hidden" name="return_url" value="admin.php"><div><label class="block text-sm font-bold text-slate-700 mb-1">Title</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="title" id="editArticleTitle" required></div><div><label class="block text-sm font-bold text-slate-700 mb-1">Author</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="author" id="editArticleAuthor" required></div><div><label class="block text-sm font-bold text-slate-700 mb-1">Link</label><input type="url" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="link" id="editArticleLink" required></div><div><label class="block text-sm font-bold text-slate-700 mb-1">Abstract</label><textarea class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none h-24" name="abstract" id="editArticleAbstract" required></textarea></div><div class="flex gap-4"><div class="flex-1"><label class="block text-sm font-bold text-slate-700 mb-1">Date</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="date" id="editArticleDate" required></div><div class="flex-1"><label class="block text-sm font-bold text-slate-700 mb-1">Read Time</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="read_time" id="editArticleReadTime" required></div></div></div><div class="modal-footer bg-white p-4"><button type="button" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 border-0" data-bs-dismiss="modal">Cancel</button><button type="submit" class="px-5 py-2.5 bg-accent-500 text-white rounded-xl font-bold border-0">Update</button></div></form></div></div></div>
+
+    <!-- NEW: Edit User Modal -->
+    <div class="modal fade" id="editUserModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-2xl border-0 shadow-2xl overflow-hidden"><div class="modal-header bg-brand-900 border-0 p-5"><h5 class="modal-title font-heading font-bold text-white"><i class="bi bi-person-gear mr-2 text-accent-500"></i> Manage User Account</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <form method="post" action="actions.php">
+            <div class="modal-body p-6 bg-brand-50 space-y-4"><input type="hidden" name="action" value="edit_user"><input type="hidden" name="user_id" id="editUserId"><input type="hidden" name="return_url" value="admin.php">
+                <div><label class="block text-sm font-bold text-slate-700 mb-1">Full Name</label><input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="name" id="editUserName" required></div>
+                <div><label class="block text-sm font-bold text-slate-700 mb-1">Email Address</label><input type="email" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none" name="email" id="editUserEmail" required></div>
+                <div><label class="block text-sm font-bold text-slate-700 mb-1">Account Role</label>
+                    <select class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none bg-white" name="role" id="editUserRole" required>
+                        <option value="member">Member</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="mt-4 pt-4 border-t border-slate-200">
+                    <label class="block text-sm font-bold text-slate-700 mb-1 text-rose-600">Force Password Reset</label>
+                    <input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none" name="password" placeholder="Type new password here...">
+                    <p class="text-xs text-slate-500 mt-1">Leave empty unless you specifically need to reset their password.</p>
+                </div>
+            </div>
+            <div class="modal-footer bg-white border-t border-slate-200 p-4"><button type="button" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-colors border-0" data-bs-dismiss="modal">Cancel</button><button type="submit" class="px-5 py-2.5 bg-accent-500 hover:bg-accent-600 text-white rounded-xl font-bold transition-colors shadow-sm border-0">Save User</button></div>
+        </form>
+    </div></div></div>
 
     <?php include __DIR__.'/partials/footer.php'; ?>
     <script> const MUTCU = { user: <?=json_encode($currentUser)?>, books: <?=json_encode($books)?>, articles: <?=json_encode($articles)?>, stats: <?=json_encode($stats)?> };</script>
@@ -286,6 +376,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
             }
         });
 
+        // Search Filters for Admin Tables
         document.getElementById('searchBooksAdmin')?.addEventListener('input', function() {
             const query = this.value.toLowerCase();
             document.querySelectorAll('#booksTable tbody tr').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none'; });
@@ -296,6 +387,12 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
             document.querySelectorAll('#articlesTable tbody tr').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none'; });
         });
 
+        document.getElementById('searchUsersAdmin')?.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            document.querySelectorAll('#usersTable tbody tr').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none'; });
+        });
+
+        // Modals Data Population
         function populateEditBookModal(id, title, author, category, driveLink, description, cover) {
             document.getElementById('editBookId').value = id;
             document.getElementById('editBookTitle').value = title;
@@ -303,7 +400,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
             document.getElementById('editBookCategory').value = category;
             document.getElementById('editBookDriveLink').value = driveLink;
             document.getElementById('editBookDescription').value = description;
-            document.getElementById('editBookExistingCover').value = cover; // Keep existing cover
+            document.getElementById('editBookExistingCover').value = cover; 
         }
 
         function populateEditArticleModal(id, title, author, abstract, link, date, readTime) {
@@ -314,6 +411,13 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
             document.getElementById('editArticleLink').value = link;
             document.getElementById('editArticleDate').value = date;
             document.getElementById('editArticleReadTime').value = readTime;
+        }
+
+        function populateEditUserModal(id, name, email, role) {
+            document.getElementById('editUserId').value = id;
+            document.getElementById('editUserName').value = name;
+            document.getElementById('editUserEmail').value = email;
+            document.getElementById('editUserRole').value = role;
         }
     </script>
 </body>
