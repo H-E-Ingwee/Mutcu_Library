@@ -19,10 +19,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 url.searchParams.delete('q'); 
                 window.history.pushState({}, '', url);
 
-                // Fetch new filter starting at page 1
                 currentPage = 1;
                 fetchFilteredBooks(true);
             });
+        });
+    }
+
+    // Listen for Sort Dropdown changes
+    const sortSelect = document.getElementById('sortSelect');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', () => {
+            currentPage = 1;
+            fetchFilteredBooks(true);
         });
     }
 
@@ -60,6 +68,10 @@ async function fetchFilteredBooks(reset = true) {
     const q = searchInput ? searchInput.value.trim() : '';
     const activeFilter = document.querySelector('.ajax-filter.bg-brand-900');
     const category = activeFilter ? activeFilter.getAttribute('data-category') : 'All';
+    
+    // Grab active sort parameter
+    const sortSelect = document.getElementById('sortSelect');
+    const sort = sortSelect ? sortSelect.value : 'newest';
 
     const loader = document.getElementById('grid-loader');
     const grid = document.getElementById('book-grid');
@@ -76,7 +88,8 @@ async function fetchFilteredBooks(reset = true) {
     }
 
     try {
-        const response = await fetch(`actions.php?action=fetch_books&q=${encodeURIComponent(q)}&category=${encodeURIComponent(category)}&page=${currentPage}`);
+        // Pass the sort parameter into the API
+        const response = await fetch(`actions.php?action=fetch_books&q=${encodeURIComponent(q)}&category=${encodeURIComponent(category)}&sort=${encodeURIComponent(sort)}&page=${currentPage}`);
         const data = await response.json();
         const books = data.books || [];
 
@@ -123,7 +136,7 @@ async function fetchFilteredBooks(reset = true) {
 
         // Toggle "Load More" button visibility
         if (data.hasMore) {
-            loadMoreContainer.classList.remove('hidden');
+            if(loadMoreContainer) loadMoreContainer.classList.remove('hidden');
             if(loadMoreBtn) loadMoreBtn.innerHTML = 'Load More Books <i class="bi bi-arrow-down-short ml-1"></i>';
         } else {
             if(loadMoreContainer) loadMoreContainer.classList.add('hidden');
@@ -137,17 +150,47 @@ async function fetchFilteredBooks(reset = true) {
 }
 
 // Global quickview
-window.openQuickView = function(el) {
-    document.getElementById('quickViewBookId').value = el.getAttribute('data-book-id');
+window.openQuickView = async function(el) {
+    const bookId = el.getAttribute('data-book-id');
+    const category = el.getAttribute('data-category');
+    
+    document.getElementById('quickViewBookId').value = bookId;
     document.getElementById('quickViewTitle').textContent = el.getAttribute('data-title');
     document.getElementById('quickViewAuthor').textContent = el.getAttribute('data-author');
-    document.getElementById('quickViewCategory').textContent = el.getAttribute('data-category');
+    document.getElementById('quickViewCategory').textContent = category;
     document.getElementById('quickViewDescription').textContent = el.getAttribute('data-description');
     document.getElementById('quickViewCover').src = el.getAttribute('data-cover');
-    document.getElementById('quickViewDownloadBtn').href = 'download.php?id=' + el.getAttribute('data-book-id');
+    document.getElementById('quickViewDownloadBtn').href = 'download.php?id=' + bookId;
 
     let modal = new bootstrap.Modal(document.getElementById('quickViewModal'));
     modal.show();
+
+    // Fetch and render Related Books
+    const relatedContainer = document.getElementById('quickViewRelatedContainer');
+    const relatedGrid = document.getElementById('quickViewRelatedGrid');
+    if (relatedContainer && relatedGrid) {
+        relatedContainer.classList.add('hidden'); // Hide while loading
+        try {
+            const response = await fetch(`actions.php?action=fetch_related&id=${bookId}&category=${encodeURIComponent(category)}`);
+            const relatedBooks = await response.json();
+            
+            if (relatedBooks.length > 0) {
+                relatedGrid.innerHTML = '';
+                relatedBooks.forEach(book => {
+                    // Clicking a related book re-triggers the Quick View for that new book
+                    relatedGrid.innerHTML += `
+                        <div class="cursor-pointer group" onclick="openQuickView(this)" data-book-id="${book.id}" data-title="${book.title.replace(/"/g, '&quot;')}" data-author="${book.author.replace(/"/g, '&quot;')}" data-description="${book.description.replace(/"/g, '&quot;')}" data-cover="${book.cover}" data-category="${book.category}" data-drive-link="${book.drive_link}">
+                            <div class="relative pt-[140%] overflow-hidden rounded-lg shadow-sm border border-slate-200">
+                                <img src="${book.cover}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                            </div>
+                            <h6 class="text-[10px] font-bold text-brand-900 mt-2 truncate">${book.title}</h6>
+                        </div>
+                    `;
+                });
+                relatedContainer.classList.remove('hidden');
+            }
+        } catch (e) { console.error('Failed to load related books', e); }
+    }
 };
 
 // Secure POST Bookmark function
@@ -182,5 +225,20 @@ window.toggleBookmark = async function(bookId, btnElement) {
     } catch (error) {
         console.error('Bookmark toggle failed', error);
         alert('Could not update bookmark due to server configuration.');
+    }
+};
+
+// Update Read Status in Profile
+window.updateReadStatus = async function(bookId, status) {
+    try {
+        const formData = new FormData();
+        formData.append('action', 'update_read_status');
+        formData.append('book_id', bookId);
+        formData.append('status', status);
+        
+        await fetch('actions.php', { method: 'POST', body: formData });
+        // Status updates invisibly in the background
+    } catch (error) {
+        console.error('Failed to update status', error);
     }
 };
