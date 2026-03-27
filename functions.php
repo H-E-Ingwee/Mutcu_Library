@@ -2,6 +2,22 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+// --- CSRF SECURITY ---
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+function csrf_token() {
+    return $_SESSION['csrf_token'];
+}
+function verify_csrf() {
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        $_SESSION['flash_error'] = "Security token expired or invalid. Please try again.";
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
+        exit;
+    }
+}
+
 require_once __DIR__ . '/db.php';
 
 // --- DATABASE AUTO-FIXER ---
