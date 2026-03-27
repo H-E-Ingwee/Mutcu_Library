@@ -7,20 +7,17 @@ $action = $_POST['action'] ?? $_GET['action'] ?? '';
 $returnUrl = $_POST['return_url'] ?? 'home.php';
 $currentUser = currentUser();
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' && !in_array($action, ['fetch_books', 'toggle_bookmark'])) {
+// NEW: Allow 'export_csv' as a GET request
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' && !in_array($action, ['fetch_books', 'toggle_bookmark', 'export_csv'])) {
     header('Location: index.php'); exit;
 }
 
-// --- FILE UPLOAD HANDLER (WITH WEBP COMPRESSION) ---
 function handleFileUpload($fileArray) {
     if (isset($fileArray) && $fileArray['error'] === UPLOAD_ERR_OK) {
         $uploadDir = __DIR__ . '/uploads/covers/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
-        }
+        if (!is_dir($uploadDir)) { mkdir($uploadDir, 0755, true); }
         
         $tmpPath = $fileArray['tmp_name'];
-        // Use mime_content_type for true security, not just extensions
         $mime = mime_content_type($tmpPath);
         $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
         
@@ -37,20 +34,17 @@ function handleFileUpload($fileArray) {
 
             $width = imagesx($sourceImage);
             $height = imagesy($sourceImage);
-            $maxWidth = 600; // Resize to a max 600px width to save space
+            $maxWidth = 600;
             
             if ($width > $maxWidth) {
                 $newWidth = $maxWidth;
                 $newHeight = floor($height * ($maxWidth / $width));
                 $finalImage = imagecreatetruecolor($newWidth, $newHeight);
-                
-                // Preserve transparency for PNGs
                 if ($mime == 'image/png' || $mime == 'image/webp') {
                     imagecolortransparent($finalImage, imagecolorallocatealpha($finalImage, 0, 0, 0, 127));
                     imagealphablending($finalImage, false);
                     imagesavealpha($finalImage, true);
                 }
-                
                 imagecopyresampled($finalImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
                 imagedestroy($sourceImage);
             } else {
@@ -59,8 +53,6 @@ function handleFileUpload($fileArray) {
             
             $filename = uniqid('cover_') . '.webp';
             $destination = $uploadDir . $filename;
-            
-            // Save as WebP with 80% quality (Massive size reduction)
             if (imagewebp($finalImage, $destination, 80)) {
                 imagedestroy($finalImage);
                 return 'uploads/covers/' . $filename;
@@ -72,7 +64,7 @@ function handleFileUpload($fileArray) {
 }
 
 // ==========================================
-// 1. AJAX ENDPOINTS
+// 1. AJAX & EXPORT ENDPOINTS
 // ==========================================
 if ($action === 'fetch_books') {
     header('Content-Type: application/json');
@@ -80,7 +72,7 @@ if ($action === 'fetch_books') {
         $q = trim($_GET['q'] ?? '');
         $category = trim($_GET['category'] ?? 'All');
         $page = max(1, (int)($_GET['page'] ?? 1));
-        $limit = 12; // Fetch 12 at a time
+        $limit = 12; 
         $offset = ($page - 1) * $limit;
         
         $sql = 'SELECT * FROM books WHERE 1=1';
@@ -88,13 +80,11 @@ if ($action === 'fetch_books') {
         if ($category !== 'All') { $sql .= ' AND category = ?'; $params[] = $category; }
         if ($q !== '') { $sql .= ' AND (title LIKE ? OR author LIKE ?)'; $params[] = "%$q%"; $params[] = "%$q%"; }
         
-        // Check total rows to see if there are more pages
         $countSql = str_replace('SELECT *', 'SELECT COUNT(*)', $sql);
         $countStmt = $pdo->prepare($countSql);
         $countStmt->execute($params);
         $totalBooks = $countStmt->fetchColumn();
         
-        // Apply limit and offset for specific page
         $sql .= ' ORDER BY id DESC LIMIT ' . (int)$limit . ' OFFSET ' . (int)$offset;
         
         $stmt = $pdo->prepare($sql);
@@ -102,11 +92,7 @@ if ($action === 'fetch_books') {
         $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
         processBooks($books); 
         
-        // Return books array AND a boolean indicating if more books exist
-        echo json_encode([
-            'books' => $books,
-            'hasMore' => ($offset + $limit) < $totalBooks
-        ]);
+        echo json_encode(['books' => $books, 'hasMore' => ($offset + $limit) < $totalBooks]);
     } catch(PDOException $e) { echo json_encode(['books' => [], 'hasMore' => false]); }
     exit;
 }
@@ -128,6 +114,34 @@ if ($action === 'toggle_bookmark') {
             echo json_encode(['status' => 'added']);
         }
     } catch (PDOException $e) { echo json_encode(['status' => 'error']); }
+    exit;
+}
+
+// NEW: Data Export System
+if ($action === 'export_csv' && isAdmin()) {
+    $type = $_GET['type'] ?? 'books';
+    $filename = "mutcu_{$type}_export_" . date('Y-m-d') . ".csv";
+    
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    
+    $output = fopen('php://output', 'w');
+    
+    if ($type === 'books') {
+        fputcsv($output, ['ID', 'Title', 'Author', 'Category', 'Drive Link', 'Downloads']);
+        $books = getBooks();
+        foreach ($books as $b) { fputcsv($output, [$b['id'], $b['title'], $b['author'], $b['category'], $b['drive_link'], $b['download_count'] ?? 0]); }
+    } elseif ($type === 'articles') {
+        fputcsv($output, ['ID', 'Title', 'Author', 'Date', 'Read Time', 'Views']);
+        $articles = getArticles();
+        foreach ($articles as $a) { fputcsv($output, [$a['id'], $a['title'], $a['author'], $a['date'], $a['read_time'], $a['view_count'] ?? 0]); }
+    } elseif ($type === 'users') {
+        fputcsv($output, ['ID', 'Name', 'Email', 'Role', 'Reading Goal', 'Registered Date', 'Last Active']);
+        $users = getUsers();
+        foreach ($users as $u) { fputcsv($output, [$u['id'], $u['name'], $u['email'], $u['role'], $u['reading_goal'], $u['created_at'], $u['last_active'] ?? 'Never']); }
+    }
+    
+    fclose($output);
     exit;
 }
 
@@ -155,7 +169,7 @@ if ($action === 'register') {
 
 if ($action === 'logout') { session_destroy(); header("Location: login.php"); exit; }
 
-// --- Admin ---
+// --- Admin Management ---
 if ($action === 'add_book' && isAdmin()) {
     $coverPath = handleFileUpload($_FILES['cover_file'] ?? null) ?? '';
     $stmt = $pdo->prepare('INSERT INTO books (title, author, category, description, cover, drive_link) VALUES (?, ?, ?, ?, ?, ?)');
@@ -165,8 +179,7 @@ if ($action === 'add_book' && isAdmin()) {
 
 if ($action === 'edit_book' && isAdmin()) {
     $coverPath = handleFileUpload($_FILES['cover_file'] ?? null);
-    if (!$coverPath) { $coverPath = $_POST['existing_cover'] ?? ''; } // Keep old cover if no new upload
-    
+    if (!$coverPath) { $coverPath = $_POST['existing_cover'] ?? ''; } 
     $stmt = $pdo->prepare('UPDATE books SET title=?, author=?, category=?, description=?, cover=?, drive_link=? WHERE id=?');
     $stmt->execute([trim($_POST['title']), trim($_POST['author']), trim($_POST['category']), trim($_POST['description']), $coverPath, trim($_POST['drive_link']), (int)$_POST['book_id']]);
     $_SESSION['flash_success'] = "Book updated."; header("Location: $returnUrl"); exit;
@@ -192,6 +205,41 @@ if ($action === 'edit_article' && isAdmin()) {
 if ($action === 'delete_article' && isAdmin()) {
     $pdo->prepare('DELETE FROM articles WHERE id = ?')->execute([(int)$_POST['article_id']]);
     $_SESSION['flash_success'] = "Article deleted."; header("Location: $returnUrl"); exit;
+}
+
+// NEW: Admin User Management
+if ($action === 'edit_user' && isAdmin()) {
+    $id = (int)$_POST['user_id'];
+    $name = trim($_POST['name']);
+    $email = trim($_POST['email']);
+    $role = trim($_POST['role']);
+    $password = $_POST['password'];
+
+    // Prevent changing your own role accidentally
+    if ($id === $currentUser['id'] && $role !== 'admin') {
+        $_SESSION['flash_error'] = "You cannot remove your own admin privileges.";
+        header("Location: $returnUrl"); exit;
+    }
+
+    if (!empty($password)) {
+        $stmt = $pdo->prepare('UPDATE users SET name=?, email=?, role=?, password=? WHERE id=?');
+        $stmt->execute([$name, $email, $role, password_hash($password, PASSWORD_DEFAULT), $id]);
+    } else {
+        $stmt = $pdo->prepare('UPDATE users SET name=?, email=?, role=? WHERE id=?');
+        $stmt->execute([$name, $email, $role, $id]);
+    }
+    $_SESSION['flash_success'] = "User account updated."; header("Location: $returnUrl"); exit;
+}
+
+if ($action === 'delete_user' && isAdmin()) {
+    $id = (int)$_POST['user_id'];
+    if ($id === $currentUser['id']) {
+        $_SESSION['flash_error'] = "You cannot delete your own account.";
+    } else {
+        $pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$id]);
+        $_SESSION['flash_success'] = "User deleted successfully.";
+    }
+    header("Location: $returnUrl"); exit;
 }
 
 // --- Profile ---
