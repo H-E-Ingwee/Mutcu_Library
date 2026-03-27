@@ -13,7 +13,8 @@ if ($q !== '') {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en"><head>
+<html lang="en">
+<head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MUTCU E-Library | Books</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,62 +22,105 @@ if ($q !== '') {
     <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="assets/css/style.css">
-</head><body>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { heading: ['Montserrat', 'sans-serif'], body: ['Lato', 'sans-serif'], },
+                    colors: {
+                        brand: { 900: '#0f172a', 800: '#1e293b', 50: '#f8fafc', },
+                        accent: { 500: '#f97316', 600: '#ea580c', }
+                    }
+                }
+            }
+        }
+    </script>
+    <style> h1, h2, h3, h4, h5, h6 { font-family: 'Montserrat', sans-serif; } </style>
+</head>
+<body class="font-body bg-brand-50 flex flex-col min-h-screen text-slate-800">
     <?php include __DIR__.'/partials/header.php'; ?>
-    <main class="flex-grow-1 py-5">
-        <div class="container">
-            <div class="row mb-5 align-items-end">
-                <div class="col-lg-6 mb-4 mb-lg-0">
-                    <h2 class="text-primary-brand fw-bold mb-2">E-Library Catalog</h2>
-                    <div style="height: 4px; width: 60px; background-color: var(--accent-color); border-radius: 2px; margin-bottom: 15px;"></div>
-                    <p class="text-muted mb-0 fs-5">Browse or search for resources securely hosted on Google Drive.</p>
+    
+    <main class="flex-grow py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Header & Search Area -->
+            <div class="flex flex-col lg:flex-row justify-between items-end mb-10 gap-6">
+                <div class="w-full lg:w-1/2">
+                    <h2 class="text-3xl font-extrabold font-heading text-brand-900 mb-2">E-Library Catalog</h2>
+                    <div class="w-16 h-1 bg-accent-500 rounded-full mb-4"></div>
+                    <p class="text-slate-500 text-lg">Browse or search for resources securely hosted on Google Drive.</p>
                 </div>
-                <div class="col-lg-6">
-                    <form id="searchForm" action="library.php" method="get" class="input-group shadow-sm rounded-pill overflow-hidden border bg-white">
-                        <span class="input-group-text bg-white border-0 ps-4"><i class="bi bi-search text-muted"></i></span>
-                        <input id="searchInput" type="text" name="q" value="<?=htmlspecialchars($q)?>" class="form-control form-control-lg border-0 shadow-none" placeholder="Search books by title or author...">
+                
+                <div class="w-full lg:w-1/2">
+                    <form id="searchForm" action="library.php" method="get" class="relative group shadow-sm hover:shadow-md transition-shadow rounded-full">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="bi bi-search text-slate-400"></i>
+                        </div>
+                        <input id="searchInput" type="text" name="q" value="<?=htmlspecialchars($q)?>" 
+                               class="block w-full pl-11 pr-24 py-4 rounded-full border border-slate-200 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 outline-none text-slate-700 bg-white transition-all" 
+                               placeholder="Search books by title or author...">
                         <input type="hidden" name="category" value="<?=htmlspecialchars($category)?>" />
-                        <button class="btn btn-accent" type="submit">Find</button>
+                        <button type="submit" class="absolute inset-y-1.5 right-1.5 px-6 bg-accent-500 hover:bg-accent-600 text-white font-bold rounded-full transition-colors">
+                            Find
+                        </button>
                     </form>
                 </div>
             </div>
 
-            <div class="row mb-5">
-                <div class="col-12 d-flex flex-wrap gap-2">
-                    <?php foreach (['All','Faith','Leadership','Purpose','Relationships'] as $cat): ?>
-                        <a href="#" data-category="<?=urlencode($cat)?>" class="filter-btn ajax-filter <?=($category=== $cat ? 'active':'')?>"><?=htmlspecialchars($cat)?> Books</a>
-                    <?php endforeach; ?>
-                </div>
+            <!-- Category Filters -->
+            <div class="flex flex-wrap gap-3 mb-12">
+                <?php foreach (['All','Faith','Leadership','Purpose','Relationships'] as $cat): ?>
+                    <a href="#" data-category="<?=urlencode($cat)?>" 
+                       class="ajax-filter px-5 py-2 rounded-full font-semibold text-sm transition-all duration-300 border <?=($category=== $cat ? 'bg-brand-900 text-white border-brand-900 shadow-md' : 'bg-white text-brand-900 border-slate-200 hover:border-brand-900 text-decoration-none')?>">
+                       <?=htmlspecialchars($cat)?> Books
+                    </a>
+                <?php endforeach; ?>
             </div>
-            <div id="grid-loader" class="loader-container d-none"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>
-            <div class="row g-4" id="book-grid">
+
+            <div id="grid-loader" class="hidden flex justify-center py-12">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-500"></div>
+            </div>
+            
+            <!-- Book Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8" id="book-grid">
                 <?php if (!$books): ?>
-                    <div class="col-12 text-center py-5">
-                        <i class="bi bi-journal-x text-muted opacity-50" style="font-size: 5rem;"></i>
-                        <h3 class="fw-bold text-primary-brand">No books found</h3>
-                        <p class="text-muted fs-5">Try adjusting your search keywords or filter criteria.</p>
-                        <a href="library.php" class="btn btn-outline-primary rounded-pill mt-3 px-4">Clear Search</a>
+                    <div class="col-span-full text-center py-16 bg-white rounded-2xl border border-slate-200">
+                        <i class="bi bi-journal-x text-slate-300 text-6xl mb-4 block"></i>
+                        <h3 class="font-extrabold font-heading text-2xl text-brand-900 mb-2">No books found</h3>
+                        <p class="text-slate-500 mb-6">Try adjusting your search keywords or filter criteria.</p>
+                        <a href="library.php" class="inline-flex px-6 py-2 border border-slate-300 rounded-full font-bold text-slate-600 hover:bg-slate-50 transition-colors text-decoration-none">Clear Search</a>
                     </div>
                 <?php else: ?>
                     <?php foreach ($books as $book): ?>
-                        <div class="col-md-4 col-lg-3 col-sm-6">
-                            <div class="card book-card" onclick="openQuickView(this)" data-book-id="<?=$book['id']?>" data-title="<?=htmlspecialchars($book['title'])?>" data-author="<?=htmlspecialchars($book['author'])?>" data-description="<?=htmlspecialchars($book['description'])?>" data-cover="<?=htmlspecialchars($book['cover'])?>" data-category="<?=htmlspecialchars($book['category'])?>" data-drive-link="<?=htmlspecialchars($book['drive_link'])?>" style="cursor: pointer;">
-                                <div class="book-cover-container">
-                                    <span class="category-badge"><?=htmlspecialchars($book['category'])?></span>
-                                    <img src="<?=htmlspecialchars($book['cover'])?>" class="book-cover" alt="<?=htmlspecialchars($book['title'])?>">
-                                </div>
-                                <div class="card-body d-flex flex-column p-4">
-                                    <h5 class="card-title fw-bold mb-1" style="font-family:var(--heading-font);color:var(--primary-color);"><?=htmlspecialchars($book['title'])?></h5>
-                                    <p class="text-muted small mb-3 border-bottom pb-2">By <?=htmlspecialchars($book['author'])?></p>
-                                    <p class="card-text small flex-grow-1 text-secondary mb-4"><?=htmlspecialchars($book['description'])?></p>
-                                    <div class="d-flex gap-2 mb-3">
-                                        <button onclick="event.stopPropagation(); toggleBookmark(<?=$book['id']?>, this)" class="btn btn-outline-secondary w-100 rounded-pill fw-bold">
-                                            <i class="bi bi-bookmark me-1"></i> Bookmark
-                                        </button>
-                                    </div>
-                                    <a href="download.php?id=<?=$book['id']?>" target="_blank" class="btn btn-outline-primary w-100 mt-auto rounded-pill fw-bold" style="border-color: var(--primary-color); color: var(--primary-color);">
-                                        <i class="bi bi-cloud-arrow-down me-1"></i> Access Book
+                        <div class="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group" 
+                             onclick="openQuickView(this)" 
+                             data-book-id="<?=$book['id']?>" 
+                             data-title="<?=htmlspecialchars($book['title'])?>" 
+                             data-author="<?=htmlspecialchars($book['author'])?>" 
+                             data-description="<?=htmlspecialchars($book['description'])?>" 
+                             data-cover="<?=htmlspecialchars($book['cover'])?>" 
+                             data-category="<?=htmlspecialchars($book['category'])?>" 
+                             data-drive-link="<?=htmlspecialchars($book['drive_link'])?>">
+                            
+                            <div class="relative pt-[130%] bg-slate-100 overflow-hidden">
+                                <span class="absolute top-3 right-3 z-10 bg-brand-900/80 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                                    <?=htmlspecialchars($book['category'])?>
+                                </span>
+                                <img src="<?=htmlspecialchars($book['cover'])?>" alt="Cover" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            </div>
+                            
+                            <div class="p-5 flex flex-col flex-grow">
+                                <h4 class="font-bold font-heading text-lg text-brand-900 mb-1 truncate"><?=htmlspecialchars($book['title'])?></h4>
+                                <p class="text-sm text-slate-500 mb-3 pb-3 border-b border-slate-100">By <?=htmlspecialchars($book['author'])?></p>
+                                <p class="text-sm text-slate-600 flex-grow mb-4 line-clamp-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"><?=htmlspecialchars($book['description'])?></p>
+                                
+                                <div class="flex gap-2 mt-auto">
+                                    <button onclick="event.stopPropagation(); toggleBookmark(<?=$book['id']?>, this)" class="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors bg-white">
+                                        <i class="bi bi-bookmark"></i>
+                                    </button>
+                                    <a href="download.php?id=<?=$book['id']?>" target="_blank" onclick="event.stopPropagation();" class="flex-grow flex items-center justify-center bg-brand-900 hover:bg-brand-800 text-white rounded-xl font-semibold text-sm transition-colors text-decoration-none">
+                                        <i class="bi bi-cloud-arrow-down mr-2"></i> Access
                                     </a>
                                 </div>
                             </div>
@@ -86,8 +130,11 @@ if ($q !== '') {
             </div>
         </div>
     </main>
+    
     <?php include __DIR__.'/partials/footer.php'; ?>
+    
     <script> const MUTCU = { user: <?=json_encode($currentUser)?>, books: <?=json_encode(getBooks())?> };</script>
     <script src="assets/js/app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body></html>
+</body>
+</html>
