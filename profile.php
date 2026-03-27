@@ -28,7 +28,7 @@ $progress = $goal > 0 ? min(100, ($downloadedBooks / $goal) * 100) : 0;
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = { theme: { extend: { fontFamily: { heading: ['Montserrat', 'sans-serif'], body: ['Lato', 'sans-serif'], }, colors: { brand: { 900: '#0f172a', 800: '#1e293b', 50: '#f8fafc', }, accent: { 500: '#f97316', 600: '#ea580c', } } } } }
+        tailwind.config = { theme: { extend: { fontFamily: { heading: ['Montserrat', 'sans-serif'], body: ['Lato', 'sans-serif'], }, colors: { brand: { 900: '#060B26', 800: '#0B133A', 50: '#F4F6FB', }, accent: { 500: '#FF9800', 600: '#E68A00', }, mutcu: { teal: '#2DD4BF', red: '#FF1A35' } } } } }
     </script>
     <style> h1, h2, h3, h4, h5, h6 { font-family: 'Montserrat', sans-serif; } </style>
 </head>
@@ -42,6 +42,13 @@ $progress = $goal > 0 ? min(100, ($downloadedBooks / $goal) * 100) : 0;
             <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl relative mb-6 flex items-center shadow-sm">
                 <i class="bi bi-check-circle-fill mr-3 text-lg"></i>
                 <span class="block sm:inline font-medium"><?php echo htmlspecialchars($flash_success); ?></span>
+            </div>
+            <?php endif; ?>
+            
+            <?php if ($flash_error): ?>
+            <div class="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl relative mb-6 flex items-center shadow-sm">
+                <i class="bi bi-exclamation-triangle-fill mr-3 text-lg"></i>
+                <span class="block sm:inline font-medium"><?php echo htmlspecialchars($flash_error); ?></span>
             </div>
             <?php endif; ?>
 
@@ -73,6 +80,8 @@ $progress = $goal > 0 ? min(100, ($downloadedBooks / $goal) * 100) : 0;
                         </div>
                         <form method="post" action="actions.php" class="flex gap-2">
                             <input type="hidden" name="action" value="update_goal">
+                            <!-- Backup CSRF Token for safety -->
+                            <input type="hidden" name="csrf_token" value="<?=csrf_token()?>">
                             <input type="number" name="goal" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none text-sm transition-all" placeholder="Annual goal" value="<?=$goal?>" min="1" required>
                             <button type="submit" class="px-4 py-2 bg-accent-500 hover:bg-accent-600 text-white font-bold rounded-xl text-sm transition-colors shadow-md border-0">Update</button>
                         </form>
@@ -98,28 +107,30 @@ $progress = $goal > 0 ? min(100, ($downloadedBooks / $goal) * 100) : 0;
                 <?php if ($bookmarks): ?>
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                         <?php foreach ($bookmarks as $book): ?>
-                            <div class="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-                                <div class="relative pt-[130%] bg-slate-100 overflow-hidden cursor-pointer" onclick="openQuickView(this)" data-book-id="<?=$book['id']?>" data-title="<?=htmlspecialchars($book['title'])?>" data-author="<?=htmlspecialchars($book['author'])?>" data-description="<?=htmlspecialchars($book['description'])?>" data-cover="<?=htmlspecialchars($book['cover'])?>" data-category="<?=htmlspecialchars($book['category'])?>" data-drive-link="<?=htmlspecialchars($book['drive_link'])?>">
+                            <div class="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer" onclick="openQuickView(this)" data-book-id="<?=$book['id']?>" data-title="<?=htmlspecialchars($book['title'])?>" data-author="<?=htmlspecialchars($book['author'])?>" data-description="<?=htmlspecialchars($book['description'])?>" data-cover="<?=htmlspecialchars($book['cover'])?>" data-category="<?=htmlspecialchars($book['category'])?>" data-drive-link="<?=htmlspecialchars($book['drive_link'])?>">
+                                
+                                <div class="relative pt-[130%] bg-slate-100 overflow-hidden">
                                     <span class="absolute top-3 right-3 z-10 bg-brand-900/80 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
                                         <?=htmlspecialchars($book['category'])?>
                                     </span>
                                     <img src="<?=htmlspecialchars($book['cover'])?>" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                                 </div>
+                                
                                 <div class="p-5 flex flex-col flex-grow">
                                     <h4 class="font-bold font-heading text-lg text-brand-900 mb-1 truncate"><?=htmlspecialchars($book['title'])?></h4>
                                     <p class="text-sm text-slate-500 mb-3 pb-3 border-b border-slate-100">By <?=htmlspecialchars($book['author'])?></p>
                                     
-                                    <!-- NEW: Read Status Selector -->
+                                    <!-- Read Status Selector -->
                                     <div class="mb-4" onclick="event.stopPropagation();">
-                                        <select onchange="updateReadStatus(<?=$book['id']?>, this.value)" class="w-full text-xs font-bold text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-accent-500 transition-colors cursor-pointer">
-                                            <option value="to_read" <?=($book['status']??'to_read')==='to_read'?'selected':''?>>📚 Want to Read</option>
-                                            <option value="reading" <?=($book['status']??'')==='reading'?'selected':''?>>📖 Currently Reading</option>
-                                            <option value="finished" <?=($book['status']??'')==='finished'?'selected':''?>>✅ Finished</option>
+                                        <select onchange="updateReadStatus(<?=$book['id']?>, this.value)" class="w-full text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-accent-500 transition-colors cursor-pointer">
+                                            <option value="to_read" <?=($book['read_status']??'to_read')==='to_read'?'selected':''?>>📚 Want to Read</option>
+                                            <option value="reading" <?=($book['read_status']??'')==='reading'?'selected':''?>>📖 Currently Reading</option>
+                                            <option value="finished" <?=($book['read_status']??'')==='finished'?'selected':''?>>✅ Finished</option>
                                         </select>
                                     </div>
 
                                     <div class="flex gap-2 mt-auto">
-                                        <button onclick="event.stopPropagation(); toggleBookmark(<?=$book['id']?>, this); setTimeout(()=>window.location.reload(), 500);" class="w-full py-2.5 rounded-xl border border-slate-200 text-rose-500 hover:bg-rose-50 hover:border-rose-200 font-bold text-sm transition-colors flex items-center justify-center">
+                                        <button onclick="event.stopPropagation(); toggleBookmark(<?=$book['id']?>, this); setTimeout(()=>window.location.reload(), 500);" class="w-full py-2.5 rounded-xl border border-slate-200 text-rose-500 hover:bg-rose-50 hover:border-rose-200 font-bold text-sm transition-colors flex items-center justify-center bg-white">
                                             <i class="bi bi-bookmark-x mr-2"></i> Remove
                                         </button>
                                         <a href="download.php?id=<?=$book['id']?>" target="_blank" onclick="event.stopPropagation();" class="w-full py-2.5 rounded-xl bg-brand-900 hover:bg-brand-800 text-white font-bold text-sm transition-colors flex items-center justify-center text-decoration-none">
@@ -154,17 +165,20 @@ $progress = $goal > 0 ? min(100, ($downloadedBooks / $goal) * 100) : 0;
                 <form method="post" action="actions.php">
                     <div class="modal-body p-6">
                         <input type="hidden" name="action" value="update_profile">
+                        <!-- Backup CSRF Token for safety -->
+                        <input type="hidden" name="csrf_token" value="<?=csrf_token()?>">
+                        
                         <div class="mb-4">
                             <label class="block text-sm font-bold text-slate-700 mb-2">Full Name</label>
-                            <input type="text" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" name="name" value="<?=htmlspecialchars($currentUser['name'])?>" required>
+                            <input type="text" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-accent-500" name="name" value="<?=htmlspecialchars($currentUser['name'])?>" required>
                         </div>
                         <div class="mb-4">
                             <label class="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
-                            <input type="email" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" name="email" value="<?=htmlspecialchars($currentUser['email'])?>" required>
+                            <input type="email" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-accent-500" name="email" value="<?=htmlspecialchars($currentUser['email'])?>" required>
                         </div>
                         <div class="mb-2">
                             <label class="block text-sm font-bold text-slate-700 mb-2">New Password <span class="text-slate-400 font-normal">(Optional)</span></label>
-                            <input type="password" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" name="password" placeholder="Leave blank to keep current">
+                            <input type="password" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-accent-500" name="password" placeholder="Leave blank to keep current">
                         </div>
                     </div>
                     <div class="modal-footer bg-brand-50 border-t border-slate-100 p-4">
