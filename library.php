@@ -72,13 +72,25 @@ processBooks($books);
             </div>
 
             <!-- Category Filters -->
-            <div class="flex flex-wrap gap-3 mb-12">
-                <?php foreach (['All','Faith','Leadership','Purpose','Relationships'] as $cat): ?>
-                    <button data-category="<?=urlencode($cat)?>" 
-                       class="ajax-filter px-5 py-2 rounded-full font-semibold text-sm transition-all duration-300 border <?=($category === $cat ? 'bg-brand-900 text-white border-brand-900 shadow-md' : 'bg-white text-brand-900 border-slate-200 hover:border-brand-900')?>">
-                       <?=htmlspecialchars($cat)?> Books
-                    </button>
-                <?php endforeach; ?>
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-12">
+                <div class="flex flex-wrap gap-3">
+                    <?php foreach (['All','Faith','Leadership','Purpose','Relationships'] as $cat): ?>
+                        <button data-category="<?=urlencode($cat)?>" 
+                           class="ajax-filter px-5 py-2 rounded-full font-semibold text-sm transition-all duration-300 border <?=($category === $cat ? 'bg-brand-900 text-white border-brand-900 shadow-md' : 'bg-white text-brand-900 border-slate-200 hover:border-brand-900')?>">
+                           <?=htmlspecialchars($cat)?> Books
+                        </button>
+                    <?php endforeach; ?>
+                </div>
+                
+                <!-- NEW: Advanced Sort Dropdown -->
+                <div class="flex items-center gap-3 bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm w-full md:w-auto">
+                    <i class="bi bi-sort-down text-slate-400"></i>
+                    <select id="sortSelect" class="bg-transparent border-none text-brand-900 text-sm font-bold outline-none cursor-pointer focus:ring-0 w-full">
+                        <option value="newest">Newest Added</option>
+                        <option value="popular">Most Popular</option>
+                        <option value="az">A-Z (Title)</option>
+                    </select>
+                </div>
             </div>
 
             <div id="grid-loader" class="hidden flex justify-center py-12">
