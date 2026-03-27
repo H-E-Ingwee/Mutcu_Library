@@ -161,6 +161,7 @@ if ($action === 'generate_abstract' && isAdmin()) {
     exit;
 }
 
+// CSV Export
 if ($action === 'export_csv' && isAdmin()) {
     $type = $_GET['type'] ?? 'books';
     $filename = "mutcu_{$type}_export_" . date('Y-m-d') . ".csv";
@@ -169,13 +170,13 @@ if ($action === 'export_csv' && isAdmin()) {
     $output = fopen('php://output', 'w');
     
     if ($type === 'books') {
-        fputcsv($output, ['ID', 'Title', 'Author', 'Category', 'Drive Link', 'Downloads']);
+        fputcsv($output, ['ID', 'Title', 'Author', 'Category', 'Drive Link', 'Downloads', 'Featured']);
         $books = getBooks();
-        foreach ($books as $b) { fputcsv($output, [$b['id'], $b['title'], $b['author'], $b['category'], $b['drive_link'], $b['download_count'] ?? 0]); }
+        foreach ($books as $b) { fputcsv($output, [$b['id'], $b['title'], $b['author'], $b['category'], $b['drive_link'], $b['download_count'] ?? 0, $b['is_featured'] ? 'Yes' : 'No']); }
     } elseif ($type === 'articles') {
-        fputcsv($output, ['ID', 'Title', 'Author', 'Date', 'Read Time', 'Views']);
+        fputcsv($output, ['ID', 'Title', 'Author', 'Date', 'Read Time', 'Views', 'Featured']);
         $articles = getArticles();
-        foreach ($articles as $a) { fputcsv($output, [$a['id'], $a['title'], $a['author'], $a['date'], $a['read_time'], $a['view_count'] ?? 0]); }
+        foreach ($articles as $a) { fputcsv($output, [$a['id'], $a['title'], $a['author'], $a['date'], $a['read_time'], $a['view_count'] ?? 0, $a['is_featured'] ? 'Yes' : 'No']); }
     } elseif ($type === 'users') {
         fputcsv($output, ['ID', 'Name', 'Email', 'Role', 'Reading Goal', 'Registered Date', 'Last Active']);
         $users = getUsers();
@@ -208,7 +209,7 @@ if ($action === 'register') {
 
 if ($action === 'logout') { session_destroy(); header("Location: login.php"); exit; }
 
-// Admin CRUD
+// --- Admin CRUD Operations ---
 if ($action === 'add_book' && isAdmin()) {
     $coverPath = handleFileUpload($_FILES['cover_file'] ?? null) ?? '';
     $pdo->prepare('INSERT INTO books (title, author, category, description, cover, drive_link) VALUES (?, ?, ?, ?, ?, ?)')
@@ -244,6 +245,30 @@ if ($action === 'edit_article' && isAdmin()) {
 if ($action === 'delete_article' && isAdmin()) {
     $pdo->prepare('DELETE FROM articles WHERE id = ?')->execute([(int)$_POST['article_id']]);
     $_SESSION['flash_success'] = "Article deleted."; header("Location: $returnUrl"); exit;
+}
+
+// NEW: Toggle Featured Book
+if ($action === 'toggle_feature_book' && isAdmin()) {
+    $id = (int)$_POST['book_id'];
+    $stmt = $pdo->prepare('SELECT is_featured FROM books WHERE id = ?');
+    $stmt->execute([$id]);
+    $currentStatus = $stmt->fetchColumn();
+    $newStatus = $currentStatus ? 0 : 1;
+    $pdo->prepare('UPDATE books SET is_featured = ? WHERE id = ?')->execute([$newStatus, $id]);
+    $_SESSION['flash_success'] = $newStatus ? "Book featured on Homepage!" : "Book removed from Homepage.";
+    header("Location: $returnUrl"); exit;
+}
+
+// NEW: Toggle Featured Article
+if ($action === 'toggle_feature_article' && isAdmin()) {
+    $id = (int)$_POST['article_id'];
+    $stmt = $pdo->prepare('SELECT is_featured FROM articles WHERE id = ?');
+    $stmt->execute([$id]);
+    $currentStatus = $stmt->fetchColumn();
+    $newStatus = $currentStatus ? 0 : 1;
+    $pdo->prepare('UPDATE articles SET is_featured = ? WHERE id = ?')->execute([$newStatus, $id]);
+    $_SESSION['flash_success'] = $newStatus ? "Article featured on Homepage!" : "Article removed from Homepage.";
+    header("Location: $returnUrl"); exit;
 }
 
 if ($action === 'edit_user' && isAdmin()) {
@@ -284,6 +309,7 @@ if ($action === 'delete_user' && isAdmin()) {
     header("Location: $returnUrl"); exit;
 }
 
+// --- Profile ---
 if ($action === 'update_profile' && $currentUser) {
     if (!empty($_POST['password'])) {
         $pdo->prepare('UPDATE users SET name = ?, email = ?, password = ? WHERE id = ?')->execute([trim($_POST['name']), trim($_POST['email']), password_hash($_POST['password'], PASSWORD_DEFAULT), $currentUser['id']]);
