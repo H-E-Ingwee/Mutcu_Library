@@ -108,11 +108,21 @@ $progress = $goal > 0 ? min(100, ($downloadedBooks / $goal) * 100) : 0;
                                 <div class="p-5 flex flex-col flex-grow">
                                     <h4 class="font-bold font-heading text-lg text-brand-900 mb-1 truncate"><?=htmlspecialchars($book['title'])?></h4>
                                     <p class="text-sm text-slate-500 mb-3 pb-3 border-b border-slate-100">By <?=htmlspecialchars($book['author'])?></p>
+                                    
+                                    <!-- NEW: Read Status Selector -->
+                                    <div class="mb-4" onclick="event.stopPropagation();">
+                                        <select onchange="updateReadStatus(<?=$book['id']?>, this.value)" class="w-full text-xs font-bold text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-accent-500 transition-colors cursor-pointer">
+                                            <option value="to_read" <?=($book['status']??'to_read')==='to_read'?'selected':''?>>📚 Want to Read</option>
+                                            <option value="reading" <?=($book['status']??'')==='reading'?'selected':''?>>📖 Currently Reading</option>
+                                            <option value="finished" <?=($book['status']??'')==='finished'?'selected':''?>>✅ Finished</option>
+                                        </select>
+                                    </div>
+
                                     <div class="flex gap-2 mt-auto">
-                                        <button onclick="toggleBookmark(<?=$book['id']?>, this); setTimeout(()=>window.location.reload(), 500);" class="w-full py-2.5 rounded-xl border border-slate-200 text-rose-500 hover:bg-rose-50 hover:border-rose-200 font-bold text-sm transition-colors flex items-center justify-center">
+                                        <button onclick="event.stopPropagation(); toggleBookmark(<?=$book['id']?>, this); setTimeout(()=>window.location.reload(), 500);" class="w-full py-2.5 rounded-xl border border-slate-200 text-rose-500 hover:bg-rose-50 hover:border-rose-200 font-bold text-sm transition-colors flex items-center justify-center">
                                             <i class="bi bi-bookmark-x mr-2"></i> Remove
                                         </button>
-                                        <a href="download.php?id=<?=$book['id']?>" target="_blank" class="w-full py-2.5 rounded-xl bg-brand-900 hover:bg-brand-800 text-white font-bold text-sm transition-colors flex items-center justify-center text-decoration-none">
+                                        <a href="download.php?id=<?=$book['id']?>" target="_blank" onclick="event.stopPropagation();" class="w-full py-2.5 rounded-xl bg-brand-900 hover:bg-brand-800 text-white font-bold text-sm transition-colors flex items-center justify-center text-decoration-none">
                                             <i class="bi bi-cloud-arrow-down mr-2"></i> Access
                                         </a>
                                     </div>
