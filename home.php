@@ -2,9 +2,8 @@
 require_once __DIR__ . '/functions.php';
 $currentUser = currentUser();
 
-// OPTIMIZED: We only fetch the first 4 books and 3 articles using our new Limit parameter
+// OPTIMIZED: We only fetch the first 4 books to make the homepage load instantly
 $books = getBooks(4);
-$articles = getArticles(3);
 $stats = getStats();
 ?>
 <!DOCTYPE html>
@@ -19,7 +18,7 @@ $stats = getStats();
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = { theme: { extend: { fontFamily: { heading: ['Montserrat', 'sans-serif'], body: ['Lato', 'sans-serif'], }, colors: { brand: { 900: '#0f172a', 800: '#1e293b', 50: '#f8fafc', }, accent: { 500: '#f97316', 600: '#ea580c', } } } } }
+        tailwind.config = { theme: { extend: { fontFamily: { heading: ['Montserrat', 'sans-serif'], body: ['Lato', 'sans-serif'], }, colors: { brand: { 900: '#060B26', 800: '#0B133A', 50: '#F4F6FB', }, accent: { 500: '#FF9800', 600: '#E68A00', }, mutcu: { teal: '#2DD4BF', red: '#FF1A35' } } } } }
     </script>
     <style> h1, h2, h3, h4, h5, h6 { font-family: 'Montserrat', sans-serif; } </style>
 </head>
@@ -27,6 +26,7 @@ $stats = getStats();
     <?php include __DIR__ . '/partials/header.php'; ?>
     
     <main class="flex-grow">
+        <!-- Hero Section -->
         <section class="relative bg-brand-900 text-white overflow-hidden py-24 sm:py-32 w-full">
             <div class="absolute inset-0 z-0">
                 <img src="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&q=80" alt="Library" class="w-full h-full object-cover opacity-20 mix-blend-overlay">
@@ -54,10 +54,12 @@ $stats = getStats();
             </div>
         </section>
 
+        <!-- Categories Section -->
         <section class="py-20 bg-brand-50 w-full">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                 <h2 class="text-3xl font-bold font-heading text-brand-900 mb-2">Explore by Category</h2>
                 <div class="w-16 h-1 bg-accent-500 mx-auto rounded-full mb-12"></div>
+                
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <?php foreach (['Faith' => ['icon' => 'bi-heart-fill', 'text' => 'text-rose-500', 'bg' => 'bg-rose-100'], 'Leadership' => ['icon' => 'bi-graph-up-arrow', 'text' => 'text-emerald-500', 'bg' => 'bg-emerald-100'], 'Purpose' => ['icon' => 'bi-compass-fill', 'text' => 'text-blue-500', 'bg' => 'bg-blue-100'], 'Relationships' => ['icon' => 'bi-people-fill', 'text' => 'text-purple-500', 'bg' => 'bg-purple-100']] as $category => $data): ?>
                         <div onclick="location.href='library.php?category=<?=urlencode($category)?>'" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 hover:border-slate-300 transition-all duration-300 cursor-pointer group">
@@ -69,6 +71,7 @@ $stats = getStats();
             </div>
         </section>
 
+        <!-- Featured Books Section -->
         <section class="py-20 bg-white border-t border-slate-200 w-full">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-10">
@@ -78,16 +81,20 @@ $stats = getStats();
                     </div>
                     <a href="library.php" class="hidden sm:inline-flex items-center text-sm font-bold text-accent-500 hover:text-accent-600 transition-colors text-decoration-none">View All Catalog <i class="bi bi-arrow-right ml-1"></i></a>
                 </div>
+                
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                    <?php foreach (array_slice($books, 0, 4) as $book): ?>
+                    <?php foreach ($books as $book): ?>
                         <div class="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group" onclick="openQuickView(this)" data-book-id="<?=$book['id']?>" data-title="<?=htmlspecialchars($book['title'])?>" data-author="<?=htmlspecialchars($book['author'])?>" data-description="<?=htmlspecialchars($book['description'])?>" data-cover="<?=htmlspecialchars($book['cover'])?>" data-category="<?=htmlspecialchars($book['category'])?>" data-drive-link="<?=htmlspecialchars($book['drive_link'])?>">
+                            
                             <div class="relative pt-[130%] bg-slate-100 overflow-hidden">
                                 <span class="absolute top-3 right-3 z-10 bg-brand-900/80 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider"><?=htmlspecialchars($book['category'])?></span>
                                 <img src="<?=htmlspecialchars($book['cover'])?>" alt="Cover" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                             </div>
+                            
                             <div class="p-5 flex flex-col flex-grow">
                                 <h4 class="font-bold font-heading text-lg text-brand-900 mb-1 truncate"><?=htmlspecialchars($book['title'])?></h4>
                                 <p class="text-sm text-slate-500 mb-3 pb-3 border-b border-slate-100">By <?=htmlspecialchars($book['author'])?></p>
+                                
                                 <div class="flex gap-2 mt-auto">
                                     <button onclick="event.stopPropagation(); toggleBookmark(<?=$book['id']?>, this)" class="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors bg-white"><i class="bi bi-bookmark"></i></button>
                                     <a href="download.php?id=<?=$book['id']?>" target="_blank" onclick="event.stopPropagation();" class="flex-grow flex items-center justify-center bg-brand-900 hover:bg-brand-800 text-white rounded-xl font-semibold text-sm transition-colors text-decoration-none"><i class="bi bi-cloud-arrow-down mr-2"></i> Access</a>
@@ -96,12 +103,14 @@ $stats = getStats();
                         </div>
                     <?php endforeach; ?>
                 </div>
+                
                 <a href="library.php" class="sm:hidden mt-8 w-full inline-flex justify-center items-center py-3 px-4 rounded-xl bg-accent-500/10 text-accent-600 font-bold text-sm text-decoration-none">View All Catalog <i class="bi bi-arrow-right ml-2"></i></a>
             </div>
         </section>
     </main>
     
     <?php include __DIR__ . '/partials/footer.php'; ?>
+    
     <script> const MUTCU = { user: <?=json_encode($currentUser)?> };</script>
     <script src="assets/js/app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
