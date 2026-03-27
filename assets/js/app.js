@@ -59,6 +59,54 @@ async function toggleBookmark(bookId, buttonElement) {
     }
 }
 
+async function fetchFilteredBooks() {
+    const q = document.getElementById('searchInput').value.trim();
+    const activeFilter = document.querySelector('.ajax-filter.active');
+    const category = activeFilter ? activeFilter.getAttribute('data-category') : 'All';
+
+    const loader = document.getElementById('grid-loader');
+    const grid = document.getElementById('book-grid');
+    loader.classList.remove('d-none');
+    grid.innerHTML = '';
+
+    try {
+        const response = await fetch(`actions.php?action=fetch_books&q=${encodeURIComponent(q)}&category=${encodeURIComponent(category)}`);
+        const books = await response.json();
+
+        books.forEach(book => {
+            const cardHtml = `
+                <div class="col-md-4 col-lg-3 col-sm-6">
+                    <div class="card book-card" onclick="openQuickView(this)" data-book-id="${book.id}" data-title="${book.title.replace(/"/g, '&quot;')}" data-author="${book.author.replace(/"/g, '&quot;')}" data-description="${book.description.replace(/"/g, '&quot;')}" data-cover="${book.cover}" data-category="${book.category}" data-drive-link="${book.drive_link}" style="cursor: pointer;">
+                        <div class="book-cover-container">
+                            <span class="category-badge">${book.category}</span>
+                            <img src="${book.cover}" class="book-cover" alt="${book.title}">
+                        </div>
+                        <div class="card-body d-flex flex-column p-4">
+                            <h5 class="card-title fw-bold mb-1" style="font-family:var(--heading-font);color:var(--primary-color);">${book.title}</h5>
+                            <p class="text-muted small mb-3 border-bottom pb-2">By ${book.author}</p>
+                            <p class="card-text small flex-grow-1 text-secondary mb-4">${book.description}</p>
+                            <div class="d-flex gap-2 mb-3">
+                                <button onclick="event.stopPropagation(); toggleBookmark(${book.id}, this)" class="btn btn-outline-secondary w-100 rounded-pill fw-bold">
+                                    <i class="bi bi-bookmark me-1"></i> Bookmark
+                                </button>
+                            </div>
+                            <a href="download.php?id=${book.id}" target="_blank" class="btn btn-outline-primary w-100 mt-auto rounded-pill fw-bold" style="border-color: var(--primary-color); color: var(--primary-color);">
+                                <i class="bi bi-cloud-arrow-down me-1"></i> Access Book
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+            grid.insertAdjacentHTML('beforeend', cardHtml);
+        });
+    } catch (error) {
+        console.error('Fetch error:', error);
+        grid.innerHTML = '<div class="col-12 text-center py-5"><i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i><h3 class="fw-bold text-danger">Error loading books</h3><p class="text-muted">Please try again later.</p></div>';
+    } finally {
+        loader.classList.add('d-none');
+    }
+}
+
 function openQuickView(buttonElement) {
     const bookId = buttonElement.getAttribute('data-book-id');
     const title = buttonElement.getAttribute('data-title');
@@ -108,6 +156,37 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // Page-specific enhancements
+    if (path === 'library.php') {
+        // Prevent search form submission
+        const searchForm = document.getElementById('searchForm');
+        if (searchForm) {
+            searchForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                fetchFilteredBooks();
+            });
+        }
+
+        // Debounced search input
+        let searchTimeout;
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(fetchFilteredBooks, 300);
+            });
+        }
+
+        // Filter buttons
+        document.querySelectorAll('.ajax-filter').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.ajax-filter').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                fetchFilteredBooks();
+            });
+        });
+    }
+
     if (path === 'home.php' && window.MUTCU && window.MUTCU.articles) {
         // Already rendered server-side
     }

@@ -33,9 +33,9 @@ if ($q !== '') {
                     <p class="text-muted mb-0 fs-5">Browse or search for resources securely hosted on Google Drive.</p>
                 </div>
                 <div class="col-lg-6">
-                    <form action="library.php" method="get" class="input-group shadow-sm rounded-pill overflow-hidden border bg-white">
+                    <form id="searchForm" action="library.php" method="get" class="input-group shadow-sm rounded-pill overflow-hidden border bg-white">
                         <span class="input-group-text bg-white border-0 ps-4"><i class="bi bi-search text-muted"></i></span>
-                        <input type="text" name="q" value="<?=htmlspecialchars($q)?>" class="form-control form-control-lg border-0 shadow-none" placeholder="Search books by title or author...">
+                        <input id="searchInput" type="text" name="q" value="<?=htmlspecialchars($q)?>" class="form-control form-control-lg border-0 shadow-none" placeholder="Search books by title or author...">
                         <input type="hidden" name="category" value="<?=htmlspecialchars($category)?>" />
                         <button class="btn btn-accent" type="submit">Find</button>
                     </form>
@@ -45,7 +45,7 @@ if ($q !== '') {
             <div class="row mb-5">
                 <div class="col-12 d-flex flex-wrap gap-2">
                     <?php foreach (['All','Faith','Leadership','Purpose','Relationships'] as $cat): ?>
-                        <a href="library.php?category=<?=urlencode($cat)?>" class="filter-btn <?=($category=== $cat ? 'active':'')?>"><?=htmlspecialchars($cat)?> Books</a>
+                        <a href="#" data-category="<?=urlencode($cat)?>" class="filter-btn ajax-filter <?=($category=== $cat ? 'active':'')?>"><?=htmlspecialchars($cat)?> Books</a>
                     <?php endforeach; ?>
                 </div>
             </div>

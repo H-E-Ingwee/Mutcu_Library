@@ -44,7 +44,7 @@ $progress = $goal > 0 ? min(100, ($downloadedBooks / $goal) * 100) : 0;
                     <p class="text-muted mb-0 fs-5">Track your reading progress, manage bookmarks, and explore your history.</p>
                 </div>
                 <div class="col-lg-6">
-                    <div class="card p-4 bg-light">
+                    <div class="card p-4 bg-light mb-4">
                         <h5 class="fw-bold text-primary-brand mb-3">Reading Goal Progress</h5>
                         <div class="mb-3">
                             <div class="d-flex justify-content-between mb-1">
@@ -59,6 +59,25 @@ $progress = $goal > 0 ? min(100, ($downloadedBooks / $goal) * 100) : 0;
                             <input type="hidden" name="action" value="update_goal">
                             <input type="number" name="goal" class="form-control" placeholder="Set annual goal" value="<?=$goal?>" min="1" required>
                             <button type="submit" class="btn btn-accent">Update</button>
+                        </form>
+                    </div>
+                    <div class="card p-4">
+                        <h5 class="fw-bold text-primary-brand mb-3">Account Settings</h5>
+                        <form method="post" action="actions.php">
+                            <input type="hidden" name="action" value="update_profile">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Name</label>
+                                <input type="text" class="form-control" id="name" name="name" value="<?=htmlspecialchars($currentUser['name'])?>" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" value="<?=htmlspecialchars($currentUser['email'])?>" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">New Password (leave blank to keep current)</label>
+                                <input type="password" class="form-control" id="password" name="password" placeholder="Enter new password">
+                            </div>
+                            <button type="submit" class="btn btn-accent">Update Profile</button>
                         </form>
                     </div>
                 </div>

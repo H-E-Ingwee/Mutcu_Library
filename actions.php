@@ -125,6 +125,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         updateReadingGoal($user['id'], (int) $_POST['goal']);
         $_SESSION['flash_success'] = 'Reading goal updated successfully.';
     }
+
+    if ($action === 'update_profile') {
+        $user = currentUser();
+        if (!$user) {
+            header('Location: login.php');
+            exit;
+        }
+        $name = trim($_POST['name']);
+        $email = trim($_POST['email']);
+        $password = $_POST['password'];
+
+        $updateFields = [];
+        $params = [];
+        if ($name !== $user['name']) {
+            $updateFields[] = 'name = ?';
+            $params[] = $name;
+        }
+        if ($email !== $user['email']) {
+            // Check if email is taken
+            $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ? AND id != ?');
+            $stmt->execute([$email, $user['id']]);
+            if ($stmt->fetch()) {
+                $_SESSION['flash_error'] = 'Email already in use.';
+                header('Location: profile.php');
+                exit;
+            }
+            $updateFields[] = 'email = ?';
+            $params[] = $email;
+        }
+        if (!empty($password)) {
+            $updateFields[] = 'password = ?';
+            $params[] = password_hash($password, PASSWORD_DEFAULT);
+        }
+
+        if ($updateFields) {
+            $params[] = $user['id'];
+            $stmt = $pdo->prepare('UPDATE users SET ' . implode(', ', $updateFields) . ' WHERE id = ?');
+            $stmt->execute($params);
+            // Update session
+            $stmt = $pdo->prepare('SELECT * FROM users WHERE id = ?');
+            $stmt->execute([$user['id']]);
+            $_SESSION['user'] = $stmt->fetch(PDO::FETCH_ASSOC);
+            $_SESSION['flash_success'] = 'Profile updated successfully.';
+        } else {
+            $_SESSION['flash_error'] = 'No changes made.';
+        }
+        header('Location: profile.php');
+        exit;
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $action = $_GET['action'] ?? '';
+
+    if ($action === 'fetch_books') {
+        $q = trim($_GET['q'] ?? '');
+        $category = $_GET['category'] ?? 'All';
+        $books = getBooks();
+
+        if ($category !== 'All') {
+            $books = array_filter($books, fn($b) => strtolower($b['category']) === strtolower($category));
+        }
+        if ($q !== '') {
+            $books = array_filter($books, fn($b) => str_contains(strtolower($b['title']), strtolower($q)) || str_contains(strtolower($b['author']), strtolower($q)));
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode(array_values($books));
+        exit;
+    }
 }
 
 header('Location: ' . $redirect);

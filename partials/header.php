@@ -18,18 +18,26 @@ if (!isset($currentUser)) {
                 <li class="nav-item"><a class="nav-link" href="articles.php">Articles</a></li>
                 <li class="nav-item"><a class="nav-link" href="admin.php">Admin</a></li>
                 <?php if ($currentUser): ?>
-                    <li class="nav-item"><a class="nav-link text-white" href="profile.php"><i class="bi bi-person-circle me-1"></i> My Library</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-white" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle me-1"></i> <?=htmlspecialchars($currentUser['name'])?>
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="profile.php"><i class="bi bi-book me-2"></i>My Library</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form method="post" action="actions.php" class="m-0">
+                                    <input type="hidden" name="action" value="logout">
+                                    <input type="hidden" name="return_url" value="<?=basename($_SERVER['PHP_SELF'])?>">
+                                    <button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-right me-2"></i>Logout</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
                     <li class="nav-item">
                         <button id="themeToggle" class="btn btn-link text-white nav-link">
                             <i class="bi bi-moon-stars"></i>
                         </button>
-                    </li>
-                    <li class="nav-item">
-                        <form method="post" action="actions.php" class="m-0">
-                            <input type="hidden" name="action" value="logout">
-                            <input type="hidden" name="return_url" value="<?=basename($_SERVER['PHP_SELF'])?>">
-                            <button type="submit" class="btn btn-accent px-4 py-2 rounded-pill">Logout</button>
-                        </form>
                     </li>
                 <?php else: ?>
                     <li class="nav-item ms-lg-4 mt-3 mt-lg-0"><a class="btn btn-accent px-4 py-2 rounded-pill" href="login.php">Member Login</a></li>
