@@ -54,9 +54,9 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
         </div>
 
         <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
-            <li class="nav-item"><button class="nav-link active" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab">Analytics</button></li>
-            <li class="nav-item"><button class="nav-link" id="books-tab" data-bs-toggle="tab" data-bs-target="#manage-books" type="button" role="tab">Manage Books</button></li>
-            <li class="nav-item"><button class="nav-link" id="articles-tab" data-bs-toggle="tab" data-bs-target="#manage-articles" type="button" role="tab">Manage Articles</button></li>
+            <li class="nav-item"><button class="nav-link active bg-primary text-white" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab">Analytics</button></li>
+            <li class="nav-item"><button class="nav-link bg-success text-white" id="books-tab" data-bs-toggle="tab" data-bs-target="#manage-books" type="button" role="tab">Manage Books</button></li>
+            <li class="nav-item"><button class="nav-link bg-warning text-dark" id="articles-tab" data-bs-toggle="tab" data-bs-target="#manage-articles" type="button" role="tab">Manage Articles</button></li>
         </ul>
 
         <div class="tab-content" id="adminTabsContent">
@@ -68,29 +68,25 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                     </ul></div></div></div>
                 </div>
 
-                <div class="mt-4">
-                    <h5 class="fw-bold text-primary-brand mb-3">Recent Activities</h5>
-                    <div class="card shadow-sm border-0 rounded-4">
-                        <div class="card-body p-0">
-                            <ul class="list-group list-group-flush">
-                                <?php if ($recentEvents): ?>
-                                    <?php foreach ($recentEvents as $event): ?>
-                                        <li class="list-group-item">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <strong><?= htmlspecialchars(ucfirst($event['event_type'])) ?></strong> on <em><?= htmlspecialchars(ucfirst($event['target_type'])) ?></em>
-                                                    <?php if ($event['user_name']): ?> by <?= htmlspecialchars($event['user_name']) ?><?php endif; ?>
-                                                </div>
-                                                <small class="text-muted"><?= htmlspecialchars(date('M d, H:i', strtotime($event['created_at']))) ?></small>
-                                            </div>
-                                        </li>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <li class="list-group-item text-center text-muted">No recent activities.</li>
-                                <?php endif; ?>
-                            </ul>
-                        </div>
-                    </div>
+                <div class="row g-4 mt-2">
+                    <div class="col-md-6"><div class="card shadow-sm border-0 rounded-4 h-100"><div class="card-header bg-white py-3 border-bottom"><h5 class="mb-0 fw-bold text-primary-brand">Book Categories Distribution</h5></div><div class="card-body"><div class="chart-container"><canvas id="categoryChart"></canvas></div></div></div></div>
+                    <div class="col-md-6"><div class="card shadow-sm border-0 rounded-4 h-100"><div class="card-header bg-white py-3 border-bottom"><h5 class="mb-0 fw-bold text-primary-brand">Recent User Activities</h5></div><div class="card-body p-0"><ul class="list-group list-group-flush">
+                        <?php if ($recentEvents): ?>
+                            <?php foreach (array_slice($recentEvents, 0, 5) as $event): ?>
+                                <li class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong><?= htmlspecialchars(ucfirst($event['event_type'])) ?></strong> on <em><?= htmlspecialchars(ucfirst($event['target_type'])) ?></em>
+                                            <?php if ($event['user_name']): ?> by <?= htmlspecialchars($event['user_name']) ?><?php endif; ?>
+                                        </div>
+                                        <small class="text-muted"><?= htmlspecialchars(date('M d, H:i', strtotime($event['created_at']))) ?></small>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <li class="list-group-item text-center text-muted">No recent activities.</li>
+                        <?php endif; ?>
+                    </ul></div></div></div>
                 </div>
             </div>
 

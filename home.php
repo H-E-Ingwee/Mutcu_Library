@@ -82,7 +82,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                                     <p class="text-muted small mb-3 border-bottom pb-2">By <?=htmlspecialchars($book['author'])?></p>
                                     <p class="card-text small flex-grow-1 text-secondary mb-4"><?=htmlspecialchars($book['description'])?></p>
                                     <div class="d-flex gap-2 mb-3">
-                                        <button onclick="toggleBookmark(<?=$book['id']?>, this)" class="btn btn-outline-secondary w-100 rounded-pill fw-bold">
+                                        <button onclick="event.stopPropagation(); toggleBookmark(<?=$book['id']?>, this)" class="btn btn-outline-secondary w-100 rounded-pill fw-bold">
                                             <i class="bi bi-bookmark me-1"></i> Bookmark
                                         </button>
                                     </div>
