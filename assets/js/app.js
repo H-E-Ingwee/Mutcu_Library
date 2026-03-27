@@ -1,44 +1,35 @@
-// Global search function accessible from Home
-window.performSearch = function(inputId) {
-    const input = document.getElementById(inputId);
-    if (input && input.value.trim() !== '') {
-        window.location.href = `library.php?q=${encodeURIComponent(input.value.trim())}`;
-    }
-};
-
 document.addEventListener('DOMContentLoaded', () => {
     
-    // --- Fix: Book Filter Clicks using Tailwind Classes ---
+    // Set up filter buttons
     const filterBtns = document.querySelectorAll('.ajax-filter');
     if (filterBtns.length > 0) {
         filterBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 
-                // Reset styling for all buttons
+                // Clear active states
                 filterBtns.forEach(b => {
                     b.classList.remove('bg-brand-900', 'text-white', 'border-brand-900', 'shadow-md');
                     b.classList.add('bg-white', 'text-brand-900', 'border-slate-200');
                 });
                 
-                // Apply active styling to the clicked button
+                // Apply active to clicked
                 btn.classList.remove('bg-white', 'text-brand-900', 'border-slate-200');
                 btn.classList.add('bg-brand-900', 'text-white', 'border-brand-900', 'shadow-md');
                 
-                // Update URL parameters without reloading page
+                // Push state to URL
                 const category = btn.getAttribute('data-category');
                 const url = new URL(window.location);
                 url.searchParams.set('category', category);
-                url.searchParams.delete('q'); // Clear text search if category is clicked
+                url.searchParams.delete('q'); 
                 window.history.pushState({}, '', url);
 
-                // Fetch new data
                 fetchFilteredBooks();
             });
         });
     }
 
-    // Attach text search form listener in Library
+    // Set up search form
     const searchForm = document.getElementById('searchForm');
     if (searchForm) {
         searchForm.addEventListener('submit', (e) => {
@@ -52,10 +43,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Fetches books dynamically on the Library page
+// Fetch books based on current parameters
 async function fetchFilteredBooks() {
-    const q = document.getElementById('searchInput') ? document.getElementById('searchInput').value.trim() : '';
-    // Find the currently active tailwind filter
+    const searchInput = document.getElementById('searchInput');
+    const q = searchInput ? searchInput.value.trim() : '';
     const activeFilter = document.querySelector('.ajax-filter.bg-brand-900');
     const category = activeFilter ? activeFilter.getAttribute('data-category') : 'All';
 
@@ -115,7 +106,6 @@ async function fetchFilteredBooks() {
     }
 }
 
-// Global functions for Quick View Modals
 window.openQuickView = function(el) {
     document.getElementById('quickViewBookId').value = el.getAttribute('data-book-id');
     document.getElementById('quickViewTitle').textContent = el.getAttribute('data-title');
@@ -130,7 +120,7 @@ window.openQuickView = function(el) {
 };
 
 window.toggleBookmark = async function(bookId, btnElement) {
-    if (!MUTCU.user) {
+    if (typeof MUTCU === 'undefined' || !MUTCU.user) {
         window.location.href = 'login.php';
         return;
     }
@@ -142,9 +132,11 @@ window.toggleBookmark = async function(bookId, btnElement) {
         if (result.status === 'added') {
             icon.classList.remove('bi-bookmark');
             icon.classList.add('bi-bookmark-fill', 'text-accent-500');
-        } else {
+            alert('Saved to your library!');
+        } else if(result.status === 'removed') {
             icon.classList.remove('bi-bookmark-fill', 'text-accent-500');
             icon.classList.add('bi-bookmark');
+            alert('Removed from your library!');
         }
     } catch (error) {
         console.error('Bookmark toggle failed', error);
