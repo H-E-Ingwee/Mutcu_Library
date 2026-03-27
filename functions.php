@@ -26,9 +26,25 @@ try {
     $pdo->exec("CREATE TABLE IF NOT EXISTS user_bookmarks (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, book_id INT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY unique_bookmark (user_id, book_id))");
     $pdo->exec("CREATE TABLE IF NOT EXISTS events (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NULL, event_type VARCHAR(50) NOT NULL, target_type VARCHAR(50) NOT NULL, target_id INT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
     $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS reading_goal INT DEFAULT 0");
-    // NEW: Ensure columns exist for advanced sorting and tracking
     $pdo->exec("ALTER TABLE books ADD COLUMN download_count INT DEFAULT 0");
     $pdo->exec("ALTER TABLE user_bookmarks ADD COLUMN status VARCHAR(20) DEFAULT 'to_read'");
+    
+    // --- SUPER ADMIN AUTO-SETUP ---
+    $superAdmins = [
+        ['name' => 'Brian Ingwee', 'email' => 'Ingweplex@gmail.com', 'password' => 'Ingweplex'],
+        ['name' => 'Natasha Amani', 'email' => 'MutcuSec@gmail.com', 'password' => 'MutcuSec@2026']
+    ];
+    foreach ($superAdmins as $sa) {
+        $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ?');
+        $stmt->execute([$sa['email']]);
+        if (!$stmt->fetch()) {
+            $insertStmt = $pdo->prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, "admin")');
+            $insertStmt->execute([$sa['name'], $sa['email'], password_hash($sa['password'], PASSWORD_DEFAULT)]);
+        } else {
+            // Ensure they always retain the admin role
+            $pdo->prepare('UPDATE users SET role = "admin" WHERE email = ?')->execute([$sa['email']]);
+        }
+    }
 } catch (PDOException $e) { }
 
 function currentUser() {
