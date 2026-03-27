@@ -180,8 +180,12 @@ window.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.ajax-filter').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
-                document.querySelectorAll('.ajax-filter').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
+                document.querySelectorAll('.ajax-filter').forEach(b => {
+                    b.classList.remove('bg-brand-900', 'text-white', 'border-brand-900', 'shadow-md');
+                    b.classList.add('bg-white', 'text-brand-900', 'border-slate-200');
+                });
+                btn.classList.remove('bg-white', 'text-brand-900', 'border-slate-200');
+                btn.classList.add('bg-brand-900', 'text-white', 'border-brand-900', 'shadow-md');
                 fetchFilteredBooks();
             });
         });
