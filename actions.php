@@ -7,20 +7,21 @@ $action = $_POST['action'] ?? $_GET['action'] ?? '';
 $returnUrl = $_POST['return_url'] ?? 'home.php';
 $currentUser = currentUser();
 
-// --- ENFORCE CSRF SECURITY ---
+// ENFORCE CSRF FOR ALL POST REQUESTS
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 }
 
-// NEW: Allow 'export_csv' and 'fetch_related' as valid GET requests
+// ONLY ALLOW SPECIFIC GET REQUESTS
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' && !in_array($action, ['fetch_books', 'toggle_bookmark', 'export_csv', 'fetch_related'])) {
     header('Location: index.php'); exit;
 }
 
+// --- FILE UPLOAD COMPRESSION ---
 function handleFileUpload($fileArray) {
     if (isset($fileArray) && $fileArray['error'] === UPLOAD_ERR_OK) {
         $uploadDir = __DIR__ . '/uploads/covers/';
-        if (!is_dir($uploadDir)) { mkdir($uploadDir, 0755, true); }
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
         
         $tmpPath = $fileArray['tmp_name'];
         $mime = mime_content_type($tmpPath);
@@ -34,7 +35,6 @@ function handleFileUpload($fileArray) {
                 case 'image/webp': $sourceImage = imagecreatefromwebp($tmpPath); break;
                 default: return null;
             }
-            
             if (!$sourceImage) return null;
 
             $width = imagesx($sourceImage);
@@ -69,14 +69,14 @@ function handleFileUpload($fileArray) {
 }
 
 // ==========================================
-// 1. AJAX & EXPORT ENDPOINTS
+// AJAX ENDPOINTS
 // ==========================================
 if ($action === 'fetch_books') {
     header('Content-Type: application/json');
     try {
         $q = trim($_GET['q'] ?? '');
         $category = trim($_GET['category'] ?? 'All');
-        $sort = trim($_GET['sort'] ?? 'newest'); // NEW: Sort parameter
+        $sort = trim($_GET['sort'] ?? 'newest');
         $page = max(1, (int)($_GET['page'] ?? 1));
         $limit = 12; 
         $offset = ($page - 1) * $limit;
@@ -91,14 +91,9 @@ if ($action === 'fetch_books') {
         $countStmt->execute($params);
         $totalBooks = $countStmt->fetchColumn();
         
-        // NEW: Apply sorting logic
-        if ($sort === 'popular') {
-            $sql .= ' ORDER BY download_count DESC, id DESC';
-        } elseif ($sort === 'az') {
-            $sql .= ' ORDER BY title ASC';
-        } else {
-            $sql .= ' ORDER BY id DESC';
-        }
+        if ($sort === 'popular') $sql .= ' ORDER BY download_count DESC, id DESC';
+        elseif ($sort === 'az') $sql .= ' ORDER BY title ASC';
+        else $sql .= ' ORDER BY id DESC';
         
         $sql .= ' LIMIT ' . (int)$limit . ' OFFSET ' . (int)$offset;
         
@@ -112,7 +107,6 @@ if ($action === 'fetch_books') {
     exit;
 }
 
-// NEW: Endpoint to fetch 3 random related books for the Quick View modal
 if ($action === 'fetch_related') {
     header('Content-Type: application/json');
     try {
@@ -133,7 +127,6 @@ if ($action === 'toggle_bookmark') {
     $book_id = (int)($_POST['book_id'] ?? 0);
     $user_id = $currentUser['id'];
     try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS user_bookmarks (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, book_id INT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY unique_bookmark (user_id, book_id))");
         $stmt = $pdo->prepare('SELECT id FROM user_bookmarks WHERE user_id = ? AND book_id = ?');
         $stmt->execute([$user_id, $book_id]);
         if ($stmt->fetch()) {
@@ -147,14 +140,32 @@ if ($action === 'toggle_bookmark') {
     exit;
 }
 
-// NEW: Data Export System
+if ($action === 'update_read_status' && $currentUser) {
+    header('Content-Type: application/json');
+    $pdo->prepare('UPDATE user_bookmarks SET status = ? WHERE user_id = ? AND book_id = ?')->execute([trim($_POST['status']), $currentUser['id'], (int)$_POST['book_id']]);
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+// AI Auto-Abstract
+if ($action === 'generate_abstract' && isAdmin()) {
+    header('Content-Type: application/json');
+    $link = trim($_POST['link'] ?? '');
+    if (empty($link)) { echo json_encode(['error' => 'Please provide a valid link first.']); exit; }
+    
+    $system = "You are an expert academic summarizer for a University Christian Union library.";
+    $prompt = "Please write a highly professional, concise 3-sentence abstract/summary for the article found at this link: " . $link . " \n\nIf you cannot access the link directly, generate a relevant summary based entirely on the URL keywords.";
+    
+    $abstract = callOpenAI($prompt, $system);
+    echo json_encode(['abstract' => $abstract]);
+    exit;
+}
+
 if ($action === 'export_csv' && isAdmin()) {
     $type = $_GET['type'] ?? 'books';
     $filename = "mutcu_{$type}_export_" . date('Y-m-d') . ".csv";
-    
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
-    
     $output = fopen('php://output', 'w');
     
     if ($type === 'books') {
@@ -170,13 +181,11 @@ if ($action === 'export_csv' && isAdmin()) {
         $users = getUsers();
         foreach ($users as $u) { fputcsv($output, [$u['id'], $u['name'], $u['email'], $u['role'], $u['reading_goal'], $u['created_at'], $u['last_active'] ?? 'Never']); }
     }
-    
-    fclose($output);
-    exit;
+    fclose($output); exit;
 }
 
 // ==========================================
-// 2. FORM ACTIONS
+// FORM ACTIONS
 // ==========================================
 if ($action === 'login') {
     $stmt = $pdo->prepare('SELECT * FROM users WHERE email = ?'); $stmt->execute([trim($_POST['email'])]);
@@ -199,19 +208,19 @@ if ($action === 'register') {
 
 if ($action === 'logout') { session_destroy(); header("Location: login.php"); exit; }
 
-// --- Admin Management ---
+// Admin CRUD
 if ($action === 'add_book' && isAdmin()) {
     $coverPath = handleFileUpload($_FILES['cover_file'] ?? null) ?? '';
-    $stmt = $pdo->prepare('INSERT INTO books (title, author, category, description, cover, drive_link) VALUES (?, ?, ?, ?, ?, ?)');
-    $stmt->execute([trim($_POST['title']), trim($_POST['author']), trim($_POST['category']), trim($_POST['description']), $coverPath, trim($_POST['drive_link'])]);
+    $pdo->prepare('INSERT INTO books (title, author, category, description, cover, drive_link) VALUES (?, ?, ?, ?, ?, ?)')
+        ->execute([trim($_POST['title']), trim($_POST['author']), trim($_POST['category']), trim($_POST['description']), $coverPath, trim($_POST['drive_link'])]);
     $_SESSION['flash_success'] = "Book added."; header("Location: $returnUrl"); exit;
 }
 
 if ($action === 'edit_book' && isAdmin()) {
     $coverPath = handleFileUpload($_FILES['cover_file'] ?? null);
-    if (!$coverPath) { $coverPath = $_POST['existing_cover'] ?? ''; } 
-    $stmt = $pdo->prepare('UPDATE books SET title=?, author=?, category=?, description=?, cover=?, drive_link=? WHERE id=?');
-    $stmt->execute([trim($_POST['title']), trim($_POST['author']), trim($_POST['category']), trim($_POST['description']), $coverPath, trim($_POST['drive_link']), (int)$_POST['book_id']]);
+    if (!$coverPath) $coverPath = $_POST['existing_cover'] ?? '';
+    $pdo->prepare('UPDATE books SET title=?, author=?, category=?, description=?, cover=?, drive_link=? WHERE id=?')
+        ->execute([trim($_POST['title']), trim($_POST['author']), trim($_POST['category']), trim($_POST['description']), $coverPath, trim($_POST['drive_link']), (int)$_POST['book_id']]);
     $_SESSION['flash_success'] = "Book updated."; header("Location: $returnUrl"); exit;
 }
 
@@ -221,14 +230,14 @@ if ($action === 'delete_book' && isAdmin()) {
 }
 
 if ($action === 'add_article' && isAdmin()) {
-    $stmt = $pdo->prepare('INSERT INTO articles (title, author, abstract, link, date, read_time) VALUES (?, ?, ?, ?, ?, ?)');
-    $stmt->execute([trim($_POST['title']), trim($_POST['author']), trim($_POST['abstract']), trim($_POST['link']), trim($_POST['date']), trim($_POST['read_time'])]);
+    $pdo->prepare('INSERT INTO articles (title, author, abstract, link, date, read_time) VALUES (?, ?, ?, ?, ?, ?)')
+        ->execute([trim($_POST['title']), trim($_POST['author']), trim($_POST['abstract']), trim($_POST['link']), trim($_POST['date']), trim($_POST['read_time'])]);
     $_SESSION['flash_success'] = "Article published."; header("Location: $returnUrl"); exit;
 }
 
 if ($action === 'edit_article' && isAdmin()) {
-    $stmt = $pdo->prepare('UPDATE articles SET title=?, author=?, abstract=?, link=?, date=?, read_time=? WHERE id=?');
-    $stmt->execute([trim($_POST['title']), trim($_POST['author']), trim($_POST['abstract']), trim($_POST['link']), trim($_POST['date']), trim($_POST['read_time']), (int)$_POST['article_id']]);
+    $pdo->prepare('UPDATE articles SET title=?, author=?, abstract=?, link=?, date=?, read_time=? WHERE id=?')
+        ->execute([trim($_POST['title']), trim($_POST['author']), trim($_POST['abstract']), trim($_POST['link']), trim($_POST['date']), trim($_POST['read_time']), (int)$_POST['article_id']]);
     $_SESSION['flash_success'] = "Article updated."; header("Location: $returnUrl"); exit;
 }
 
@@ -237,63 +246,44 @@ if ($action === 'delete_article' && isAdmin()) {
     $_SESSION['flash_success'] = "Article deleted."; header("Location: $returnUrl"); exit;
 }
 
-// NEW: Admin User Management
 if ($action === 'edit_user' && isAdmin()) {
     $id = (int)$_POST['user_id'];
-    $name = trim($_POST['name']);
-    $email = trim($_POST['email']);
-    $role = trim($_POST['role'] ?? 'member'); // Fallback if disabled
-    $password = $_POST['password'];
-
-    $stmt = $pdo->prepare('SELECT email FROM users WHERE id = ?');
-    $stmt->execute([$id]);
-    $targetUser = $stmt->fetch(PDO::FETCH_ASSOC);
-    $targetEmail = $targetUser ? strtolower($targetUser['email']) : '';
-    $superAdmins = ['ingweplex@gmail.com', 'mutcusec@gmail.com'];
-
-    // Protect Super Admins from being demoted
-    if (in_array($targetEmail, $superAdmins) && $role !== 'admin') {
-        $_SESSION['flash_error'] = "Action denied. Protected Super Admins cannot be demoted.";
-        header("Location: $returnUrl"); exit;
+    $role = trim($_POST['role'] ?? 'member');
+    
+    $stmt = $pdo->prepare('SELECT email FROM users WHERE id = ?'); $stmt->execute([$id]);
+    $targetEmail = strtolower($stmt->fetchColumn());
+    
+    if (in_array($targetEmail, ['ingweplex@gmail.com', 'mutcusec@gmail.com']) && $role !== 'admin') {
+        $_SESSION['flash_error'] = "Super Admins cannot be demoted."; header("Location: $returnUrl"); exit;
     }
-
-    // Prevent changing your own role accidentally
     if ($id === $currentUser['id'] && $role !== 'admin') {
-        $_SESSION['flash_error'] = "You cannot remove your own admin privileges.";
-        header("Location: $returnUrl"); exit;
+        $_SESSION['flash_error'] = "You cannot remove your own privileges."; header("Location: $returnUrl"); exit;
     }
 
-    if (!empty($password)) {
-        $stmt = $pdo->prepare('UPDATE users SET name=?, email=?, role=?, password=? WHERE id=?');
-        $stmt->execute([$name, $email, $role, password_hash($password, PASSWORD_DEFAULT), $id]);
+    if (!empty($_POST['password'])) {
+        $pdo->prepare('UPDATE users SET name=?, email=?, role=?, password=? WHERE id=?')->execute([trim($_POST['name']), trim($_POST['email']), $role, password_hash($_POST['password'], PASSWORD_DEFAULT), $id]);
     } else {
-        $stmt = $pdo->prepare('UPDATE users SET name=?, email=?, role=? WHERE id=?');
-        $stmt->execute([$name, $email, $role, $id]);
+        $pdo->prepare('UPDATE users SET name=?, email=?, role=? WHERE id=?')->execute([trim($_POST['name']), trim($_POST['email']), $role, $id]);
     }
-    $_SESSION['flash_success'] = "User account updated."; header("Location: $returnUrl"); exit;
+    $_SESSION['flash_success'] = "User updated."; header("Location: $returnUrl"); exit;
 }
 
 if ($action === 'delete_user' && isAdmin()) {
     $id = (int)$_POST['user_id'];
+    $stmt = $pdo->prepare('SELECT email FROM users WHERE id = ?'); $stmt->execute([$id]);
+    $targetEmail = strtolower($stmt->fetchColumn());
     
-    $stmt = $pdo->prepare('SELECT email FROM users WHERE id = ?');
-    $stmt->execute([$id]);
-    $targetUser = $stmt->fetch(PDO::FETCH_ASSOC);
-    $targetEmail = $targetUser ? strtolower($targetUser['email']) : '';
-    $superAdmins = ['ingweplex@gmail.com', 'mutcusec@gmail.com'];
-
-    if (in_array($targetEmail, $superAdmins)) {
-        $_SESSION['flash_error'] = "Action denied. Protected Super Admins cannot be deleted.";
+    if (in_array($targetEmail, ['ingweplex@gmail.com', 'mutcusec@gmail.com'])) {
+        $_SESSION['flash_error'] = "Super Admins cannot be deleted.";
     } elseif ($id === $currentUser['id']) {
         $_SESSION['flash_error'] = "You cannot delete your own account.";
     } else {
         $pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$id]);
-        $_SESSION['flash_success'] = "User deleted successfully.";
+        $_SESSION['flash_success'] = "User deleted.";
     }
     header("Location: $returnUrl"); exit;
 }
 
-// --- Profile ---
 if ($action === 'update_profile' && $currentUser) {
     if (!empty($_POST['password'])) {
         $pdo->prepare('UPDATE users SET name = ?, email = ?, password = ? WHERE id = ?')->execute([trim($_POST['name']), trim($_POST['email']), password_hash($_POST['password'], PASSWORD_DEFAULT), $currentUser['id']]);
@@ -306,16 +296,6 @@ if ($action === 'update_profile' && $currentUser) {
 if ($action === 'update_goal' && $currentUser) {
     $pdo->prepare('UPDATE users SET reading_goal = ? WHERE id = ?')->execute([(int)$_POST['goal'], $currentUser['id']]);
     $_SESSION['flash_success'] = "Reading goal updated!"; header("Location: profile.php"); exit;
-}
-
-// NEW: Endpoint to track Reading Status (To Read, Reading, Finished)
-if ($action === 'update_read_status' && $currentUser) {
-    header('Content-Type: application/json');
-    $book_id = (int)$_POST['book_id'];
-    $status = trim($_POST['status']);
-    $pdo->prepare('UPDATE user_bookmarks SET status = ? WHERE user_id = ? AND book_id = ?')->execute([$status, $currentUser['id'], $book_id]);
-    echo json_encode(['success' => true]);
-    exit;
 }
 
 header("Location: index.php");
