@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// NEW: Safely load the configuration file so the OpenAI API Key is recognized!
+// Safely load the configuration file so the OpenAI API Key is recognized
 if (file_exists(__DIR__ . '/config.php')) {
     require_once __DIR__ . '/config.php';
 }
@@ -33,6 +33,10 @@ try {
     $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS reading_goal INT DEFAULT 0");
     $pdo->exec("ALTER TABLE books ADD COLUMN IF NOT EXISTS download_count INT DEFAULT 0");
     $pdo->exec("ALTER TABLE user_bookmarks ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'to_read'");
+    
+    // NEW: Columns for Homepage Featuring
+    $pdo->exec("ALTER TABLE books ADD COLUMN IF NOT EXISTS is_featured TINYINT(1) DEFAULT 0");
+    $pdo->exec("ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_featured TINYINT(1) DEFAULT 0");
     
     // Super Admin Auto-Setup
     $superAdmins = [
@@ -109,6 +113,26 @@ function getArticles($limit = null) {
         return $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC); 
     } 
     catch (PDOException $e) { return []; }
+}
+
+// NEW: Fetch explicitly featured books (or fallback to newest)
+function getFeaturedBooks($limit = 4) {
+    global $pdo;
+    try {
+        $stmt = $pdo->query("SELECT * FROM books ORDER BY is_featured DESC, id DESC LIMIT " . (int)$limit);
+        $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        processBooks($books);
+        return $books;
+    } catch (PDOException $e) { return []; }
+}
+
+// NEW: Fetch explicitly featured articles (or fallback to newest)
+function getFeaturedArticles($limit = 3) {
+    global $pdo;
+    try {
+        $stmt = $pdo->query("SELECT * FROM articles ORDER BY is_featured DESC, date DESC LIMIT " . (int)$limit);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) { return []; }
 }
 
 function getUsers() {
