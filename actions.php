@@ -11,21 +11,61 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' && !in_array($action, ['fetch_books', 
     header('Location: index.php'); exit;
 }
 
-// --- FILE UPLOAD HANDLER ---
+// --- FILE UPLOAD HANDLER (WITH WEBP COMPRESSION) ---
 function handleFileUpload($fileArray) {
     if (isset($fileArray) && $fileArray['error'] === UPLOAD_ERR_OK) {
         $uploadDir = __DIR__ . '/uploads/covers/';
-        // Create directory if it doesn't exist
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0755, true);
         }
-        $ext = strtolower(pathinfo($fileArray['name'], PATHINFO_EXTENSION));
-        // Security check: Only allow images
-        if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'])) {
-            $filename = uniqid('cover_') . '.' . $ext;
-            if (move_uploaded_file($fileArray['tmp_name'], $uploadDir . $filename)) {
+        
+        $tmpPath = $fileArray['tmp_name'];
+        // Use mime_content_type for true security, not just extensions
+        $mime = mime_content_type($tmpPath);
+        $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        
+        if (in_array($mime, $allowedMimes)) {
+            switch ($mime) {
+                case 'image/jpeg': $sourceImage = imagecreatefromjpeg($tmpPath); break;
+                case 'image/png':  $sourceImage = imagecreatefrompng($tmpPath); break;
+                case 'image/gif':  $sourceImage = imagecreatefromgif($tmpPath); break;
+                case 'image/webp': $sourceImage = imagecreatefromwebp($tmpPath); break;
+                default: return null;
+            }
+            
+            if (!$sourceImage) return null;
+
+            $width = imagesx($sourceImage);
+            $height = imagesy($sourceImage);
+            $maxWidth = 600; // Resize to a max 600px width to save space
+            
+            if ($width > $maxWidth) {
+                $newWidth = $maxWidth;
+                $newHeight = floor($height * ($maxWidth / $width));
+                $finalImage = imagecreatetruecolor($newWidth, $newHeight);
+                
+                // Preserve transparency for PNGs
+                if ($mime == 'image/png' || $mime == 'image/webp') {
+                    imagecolortransparent($finalImage, imagecolorallocatealpha($finalImage, 0, 0, 0, 127));
+                    imagealphablending($finalImage, false);
+                    imagesavealpha($finalImage, true);
+                }
+                
+                imagecopyresampled($finalImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+                imagedestroy($sourceImage);
+            } else {
+                $finalImage = $sourceImage;
+            }
+            
+            $filename = uniqid('cover_') . '.webp';
+            $destination = $uploadDir . $filename;
+            
+            // Save as WebP with 80% quality (Massive size reduction)
+            if (imagewebp($finalImage, $destination, 80)) {
+                imagedestroy($finalImage);
                 return 'uploads/covers/' . $filename;
             }
+            imagedestroy($finalImage);
         }
     }
     return null;
@@ -39,18 +79,35 @@ if ($action === 'fetch_books') {
     try {
         $q = trim($_GET['q'] ?? '');
         $category = trim($_GET['category'] ?? 'All');
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $limit = 12; // Fetch 12 at a time
+        $offset = ($page - 1) * $limit;
+        
         $sql = 'SELECT * FROM books WHERE 1=1';
         $params = [];
         if ($category !== 'All') { $sql .= ' AND category = ?'; $params[] = $category; }
         if ($q !== '') { $sql .= ' AND (title LIKE ? OR author LIKE ?)'; $params[] = "%$q%"; $params[] = "%$q%"; }
-        $sql .= ' ORDER BY id DESC';
+        
+        // Check total rows to see if there are more pages
+        $countSql = str_replace('SELECT *', 'SELECT COUNT(*)', $sql);
+        $countStmt = $pdo->prepare($countSql);
+        $countStmt->execute($params);
+        $totalBooks = $countStmt->fetchColumn();
+        
+        // Apply limit and offset for specific page
+        $sql .= ' ORDER BY id DESC LIMIT ' . (int)$limit . ' OFFSET ' . (int)$offset;
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
         processBooks($books); 
-        echo json_encode($books);
-    } catch(PDOException $e) { echo json_encode([]); }
+        
+        // Return books array AND a boolean indicating if more books exist
+        echo json_encode([
+            'books' => $books,
+            'hasMore' => ($offset + $limit) < $totalBooks
+        ]);
+    } catch(PDOException $e) { echo json_encode(['books' => [], 'hasMore' => false]); }
     exit;
 }
 
