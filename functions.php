@@ -17,9 +17,8 @@ function isAdmin() {
     return $user && $user['role'] === 'admin';
 }
 
-// NEW: Generates beautiful, symbolic images for books without covers
+// FIX: Generate beautiful Unsplash covers based on category if missing
 function getSymbolicCover($category, $title) {
-    // High-quality Unsplash image banks based on category
     $coverBanks = [
         'Faith' => [
             'https://images.unsplash.com/photo-1490127252417-7c393f993ee4?w=500&q=80',
@@ -43,7 +42,6 @@ function getSymbolicCover($category, $title) {
         ]
     ];
 
-    // Use a hash of the title so the book always gets the same image every time it loads
     $hash = crc32($title);
     $categoryArray = $coverBanks[$category] ?? $coverBanks['Faith'];
     $index = $hash % count($categoryArray);
@@ -56,7 +54,6 @@ function getBooks() {
     $stmt = $pdo->query('SELECT * FROM books ORDER BY id DESC');
     $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Inject dynamic symbolic covers if missing
     foreach ($books as &$book) {
         if (empty($book['cover']) || !filter_var($book['cover'], FILTER_VALIDATE_URL)) {
             $book['cover'] = getSymbolicCover($book['category'], $book['title']);
@@ -67,8 +64,7 @@ function getBooks() {
 
 function getArticles() {
     global $pdo;
-    $stmt = $pdo->query('SELECT * FROM articles ORDER BY id DESC');
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    return $pdo->query('SELECT * FROM articles ORDER BY id DESC')->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function logEvent($userId, $eventType, $targetType, $targetId = null) {
@@ -136,7 +132,6 @@ function getWeeklyInteractions() {
         ORDER BY date ASC
     ');
     $data = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
-    
     $weekly = [];
     for ($i = 6; $i >= 0; $i--) {
         $date = date('Y-m-d', strtotime("-$i days"));
