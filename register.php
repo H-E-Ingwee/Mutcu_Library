@@ -5,9 +5,75 @@ if ($currentUser) {
     header('Location: home.php'); exit;
 }
 ?>
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>MUTCU E-Library | Register</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet"><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"><link rel="stylesheet" href="assets/css/style.css"></head><body>
-<?php include __DIR__.'/partials/header.php'; ?>
-<main class="flex-grow-1 py-5"><div class="container"><div class="row justify-content-center"><div class="col-md-6 col-lg-5"><div class="card border-0 shadow-lg mt-4 mt-lg-5 rounded-4 overflow-hidden"><div class="card-body p-5"><div class="text-center mb-4"><div class="d-inline-flex align-items-center justify-content-center bg-primary-brand text-white rounded-circle mb-3" style="width:80px;height:80px;"><i class="bi bi-person-plus fs-1"></i></div><h3 class="heading-font text-primary-brand fw-bold">Create Account</h3><p class="text-muted">Join as a member to download books and track usage.</p></div><form method="post" action="actions.php" class="needs-validation" novalidate><input type="hidden" name="action" value="register"><input type="hidden" name="return_url" value="login.php"><div class="form-floating mb-3"><input type="text" class="form-control" name="name" id="name" placeholder="Full Name" required><label for="name">Full Name</label></div><div class="form-floating mb-3"><input type="email" class="form-control" name="email" id="email" placeholder="name@example.com" required><label for="email">Email address</label></div><div class="form-floating mb-4"><input type="password" class="form-control" name="password" id="password" placeholder="Password" required><label for="password">Password</label></div><button type="submit" class="btn btn-accent btn-lg w-100 rounded-pill shadow-sm mb-3">Register</button><div class="text-center text-muted">Already have an account? <a href="login.php" class="text-decoration-none fw-bold" style="color: var(--primary-color);">Login</a></div></form></div></div></div></div></main>
-<?php include __DIR__.'/partials/footer.php'; ?>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MUTCU E-Library | Register</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { heading: ['Montserrat', 'sans-serif'], body: ['Lato', 'sans-serif'] }, colors: { brand: { 900: '#0f172a', 800: '#1e293b', 50: '#f8fafc' }, accent: { 500: '#f97316', 600: '#ea580c' } } } } }
+    </script>
+</head>
+<body class="font-body bg-brand-50 min-h-screen flex flex-col text-slate-800">
+    
+    <nav class="absolute top-0 w-full z-50 py-6 px-8">
+        <a class="flex items-center text-brand-900 hover:text-brand-800 text-xl font-extrabold font-heading tracking-tight no-underline" href="home.php">
+            <i class="bi bi-book-half text-accent-500 mr-2 text-2xl"></i> MUTCU Library
+        </a>
+    </nav>
+
+    <main class="flex-grow flex items-center justify-center p-4 py-20 relative overflow-hidden">
+        <div class="absolute top-[-10%] right-[-10%] w-96 h-96 bg-accent-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-brand-900/5 rounded-full blur-3xl"></div>
+
+        <div class="w-full max-w-md bg-white p-8 sm:p-10 rounded-3xl shadow-2xl shadow-slate-200/50 relative z-10 border border-slate-100">
+            
+            <?php if (isset($_SESSION['flash_error'])): ?>
+            <div class="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl mb-6 text-sm font-semibold flex items-center">
+                <i class="bi bi-exclamation-triangle-fill mr-2"></i> <?php echo htmlspecialchars($_SESSION['flash_error']); unset($_SESSION['flash_error']); ?>
+            </div>
+            <?php endif; ?>
+
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-20 h-20 bg-brand-50 text-brand-900 rounded-full mb-4 border border-slate-100 shadow-inner">
+                    <i class="bi bi-person-plus text-4xl ml-1"></i>
+                </div>
+                <h3 class="font-heading font-extrabold text-3xl text-brand-900 mb-2">Create Account</h3>
+                <p class="text-slate-500">Join as a member to access and track resources.</p>
+            </div>
+
+            <form method="post" action="actions.php">
+                <input type="hidden" name="action" value="register">
+                <input type="hidden" name="return_url" value="login.php">
+                
+                <div class="mb-5">
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Full Name</label>
+                    <input type="text" class="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-accent-500 outline-none transition-all text-slate-700 font-medium" name="name" placeholder="John Doe" required>
+                </div>
+
+                <div class="mb-5">
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
+                    <input type="email" class="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-accent-500 outline-none transition-all text-slate-700 font-medium" name="email" placeholder="name@example.com" required>
+                </div>
+                
+                <div class="mb-8">
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Password</label>
+                    <input type="password" class="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-accent-500 outline-none transition-all text-slate-700 font-medium" name="password" placeholder="Create a strong password" required>
+                </div>
+                
+                <button type="submit" class="w-full py-3.5 bg-accent-500 hover:bg-accent-600 text-white rounded-xl font-bold text-lg transition-colors shadow-lg shadow-accent-500/30 mb-6">
+                    Register Account
+                </button>
+                
+                <div class="text-center text-sm font-medium text-slate-500">
+                    Already have an account? <a href="login.php" class="text-brand-900 hover:text-brand-800 font-bold no-underline ml-1">Login here</a>
+                </div>
+            </form>
+        </div>
+    </main>
+</body>
+</html>
