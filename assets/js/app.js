@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     
-    // Set up filter buttons
+    // 1. Library Filters
     const filterBtns = document.querySelectorAll('.ajax-filter');
     if (filterBtns.length > 0) {
         filterBtns.forEach(btn => {
@@ -13,11 +13,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     b.classList.add('bg-white', 'text-brand-900', 'border-slate-200');
                 });
                 
-                // Apply active to clicked
+                // Set clicked state
                 btn.classList.remove('bg-white', 'text-brand-900', 'border-slate-200');
                 btn.classList.add('bg-brand-900', 'text-white', 'border-brand-900', 'shadow-md');
                 
-                // Push state to URL
+                // Update URL quietly
                 const category = btn.getAttribute('data-category');
                 const url = new URL(window.location);
                 url.searchParams.set('category', category);
@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Set up search form
+    // 2. Search Form
     const searchForm = document.getElementById('searchForm');
     if (searchForm) {
         searchForm.addEventListener('submit', (e) => {
@@ -106,6 +106,7 @@ async function fetchFilteredBooks() {
     }
 }
 
+// Global quickview
 window.openQuickView = function(el) {
     document.getElementById('quickViewBookId').value = el.getAttribute('data-book-id');
     document.getElementById('quickViewTitle').textContent = el.getAttribute('data-title');
@@ -119,15 +120,25 @@ window.openQuickView = function(el) {
     modal.show();
 };
 
+// Secure POST Bookmark function
 window.toggleBookmark = async function(bookId, btnElement) {
     if (typeof MUTCU === 'undefined' || !MUTCU.user) {
         window.location.href = 'login.php';
         return;
     }
     try {
-        const response = await fetch(`actions.php?action=toggle_bookmark&book_id=${bookId}`);
+        const formData = new FormData();
+        formData.append('action', 'toggle_bookmark');
+        formData.append('book_id', bookId);
+
+        const response = await fetch('actions.php', { method: 'POST', body: formData });
         const result = await response.json();
         
+        if (result.status === 'error') {
+            alert('Notice: ' + result.message);
+            return;
+        }
+
         const icon = btnElement.querySelector('i');
         if (result.status === 'added') {
             icon.classList.remove('bi-bookmark');
@@ -140,5 +151,6 @@ window.toggleBookmark = async function(bookId, btnElement) {
         }
     } catch (error) {
         console.error('Bookmark toggle failed', error);
+        alert('Could not update bookmark due to server configuration.');
     }
 };
