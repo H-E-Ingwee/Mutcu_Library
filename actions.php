@@ -242,8 +242,20 @@ if ($action === 'edit_user' && isAdmin()) {
     $id = (int)$_POST['user_id'];
     $name = trim($_POST['name']);
     $email = trim($_POST['email']);
-    $role = trim($_POST['role']);
+    $role = trim($_POST['role'] ?? 'member'); // Fallback if disabled
     $password = $_POST['password'];
+
+    $stmt = $pdo->prepare('SELECT email FROM users WHERE id = ?');
+    $stmt->execute([$id]);
+    $targetUser = $stmt->fetch(PDO::FETCH_ASSOC);
+    $targetEmail = $targetUser ? strtolower($targetUser['email']) : '';
+    $superAdmins = ['ingweplex@gmail.com', 'mutcusec@gmail.com'];
+
+    // Protect Super Admins from being demoted
+    if (in_array($targetEmail, $superAdmins) && $role !== 'admin') {
+        $_SESSION['flash_error'] = "Action denied. Protected Super Admins cannot be demoted.";
+        header("Location: $returnUrl"); exit;
+    }
 
     // Prevent changing your own role accidentally
     if ($id === $currentUser['id'] && $role !== 'admin') {
@@ -263,7 +275,16 @@ if ($action === 'edit_user' && isAdmin()) {
 
 if ($action === 'delete_user' && isAdmin()) {
     $id = (int)$_POST['user_id'];
-    if ($id === $currentUser['id']) {
+    
+    $stmt = $pdo->prepare('SELECT email FROM users WHERE id = ?');
+    $stmt->execute([$id]);
+    $targetUser = $stmt->fetch(PDO::FETCH_ASSOC);
+    $targetEmail = $targetUser ? strtolower($targetUser['email']) : '';
+    $superAdmins = ['ingweplex@gmail.com', 'mutcusec@gmail.com'];
+
+    if (in_array($targetEmail, $superAdmins)) {
+        $_SESSION['flash_error'] = "Action denied. Protected Super Admins cannot be deleted.";
+    } elseif ($id === $currentUser['id']) {
         $_SESSION['flash_error'] = "You cannot delete your own account.";
     } else {
         $pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$id]);
