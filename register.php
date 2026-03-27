@@ -15,11 +15,14 @@ if ($currentUser) {
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = { theme: { extend: { fontFamily: { heading: ['Montserrat', 'sans-serif'], body: ['Lato', 'sans-serif'] }, colors: { brand: { 900: '#0f172a', 800: '#1e293b', 50: '#f8fafc' }, accent: { 500: '#f97316', 600: '#ea580c' } } } } }
+        tailwind.config = { theme: { extend: { fontFamily: { heading: ['Montserrat', 'sans-serif'], body: ['Lato', 'sans-serif'] }, colors: { brand: { 900: '#060B26', 800: '#0B133A', 50: '#F4F6FB' }, accent: { 500: '#FF9800', 600: '#E68A00' } } } } }
     </script>
 </head>
 <body class="font-body bg-brand-50 min-h-screen flex flex-col text-slate-800">
     
+    <!-- GLOBAL CSRF TOKEN FOR SECURE FORMS -->
+    <input type="hidden" id="csrf_token_global" value="<?= csrf_token() ?>">
+
     <nav class="absolute top-0 w-full z-50 py-6 px-8">
         <a class="flex items-center text-brand-900 hover:text-brand-800 text-xl font-extrabold font-heading tracking-tight no-underline" href="home.php">
             <i class="bi bi-book-half text-accent-500 mr-2 text-2xl"></i> MUTCU Library
@@ -65,7 +68,7 @@ if ($currentUser) {
                     <input type="password" class="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-accent-500 outline-none transition-all text-slate-700 font-medium" name="password" placeholder="Create a strong password" required>
                 </div>
                 
-                <button type="submit" class="w-full py-3.5 bg-accent-500 hover:bg-accent-600 text-white rounded-xl font-bold text-lg transition-colors shadow-lg shadow-accent-500/30 mb-6">
+                <button type="submit" class="w-full py-3.5 bg-accent-500 hover:bg-accent-600 text-white rounded-xl font-bold text-lg transition-colors shadow-lg shadow-accent-500/30 mb-6 border-0">
                     Register Account
                 </button>
                 
@@ -75,5 +78,6 @@ if ($currentUser) {
             </form>
         </div>
     </main>
+    <script src="assets/js/app.js"></script>
 </body>
 </html>
